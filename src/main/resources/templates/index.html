@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" type="text/css" th:href="@{/webjars/bootstrap/3.3.7/css/bootstrap.min.css}" />
+    <link th:href="@{/grid.css}" rel="stylesheet" type="text/css"/>
+
+    <title>Registration</title>
+</head>
+
+<body>
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span> <span
+                    class="icon-bar"></span> <span class="icon-bar"></span> <span
+                    class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#" th:href="@{/}">Registration and
+                Login Module</a>
+        </div>
+        <div id="navbar" class="collapse navbar-collapse">
+            <ul class="nav navbar-nav">
+                <li sec:authorize="isAuthenticated()"><a th:href="@{/logout}">Logout</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+<div class="container">
+    <table>
+        <tr>
+            <th>A</th>
+            <th>B</th>
+            <th>C</th>
+            <th>D</th>
+            <th>E</th>
+            <th>F</th>
+            <th>G</th>
+            <th>H</th>
+            <th>I</th>
+            <th>J</th>
+        </tr>
+        <tr>
+            <td>
+                <div style="width: 100%; height: 100%;">
+                <input type="button" class="my-btn"/>
+                </div>
+            </td>
+            <td>
+                <div style="width: 100%; height: 100%;">
+                    <input type="button" class="my-btn"/>
+                </div>
+            </td>
+            <td>
+                <div style="width: 100%; height: 100%;">
+                    <input type="button" class="my-btn"/>
+                </div>
+            </td>
+            <td>
+                <div style="width: 100%; height: 100%;">
+                    <input type="button" class="my-btn"/>
+                </div>
+            </td>
+            <td>
+                <div style="width: 100%; height: 100%;">
+                    <input type="button" class="my-btn"/>
+                </div>
+            </td>
+            <td>
+                <div style="width: 100%; height: 100%;">
+                    <input type="button" class="my-btn"/>
+                </div>
+            </td>
+            <td>
+                <div style="width: 100%; height: 100%;">
+                    <input type="button" class="my-btn"/>
+                </div>
+            </td>
+            <td>
+                <div style="width: 100%; height: 100%;">
+                    <input type="button" class="my-btn"/>
+                </div>
+            </td>
+            <td>
+                <div style="width: 100%; height: 100%;">
+                    <input type="button" class="my-btn"/>
+                </div>
+            </td>
+            <td>
+                <div style="width: 100%; height: 100%;">
+                    <input type="button" class="my-btn"/>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td><input type="button" class="my-btn"></input></td>
+            <td><input type="button" class="my-btn"></input></td>
+            <td><input type="button" class="my-btn"></input></td>
+            <td><input type="button" class="my-btn"></input></td>
+            <td><input type="button" class="my-btn"></input></td>
+            <td><input type="button" class="my-btn"></input></td>
+            <td><input type="button" class="my-btn"></input></td>
+            <td><input type="button" class="my-btn"></input></td>
+            <td><input type="button" class="my-btn"></input></td>
+            <td><input type="button" class="my-btn"></input></td>
+        </tr>
+<!--        <tr>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--        </tr>-->
+<!--        <tr>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--            <td>a</td>-->
+<!--        </tr>-->
+    </table>
+</div>
+
+<br>
+<br>
+
+<div class="container">
+
+
+    <p>
+        Welcome <span sec:authentication="principal.username">User</span>
+    </p>
+</div>
+
+<script type="text/javascript" th:src="@{/webjars/jquery/3.2.1/jquery.min.js/}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/3.3.7/js/bootstrap.min.js}"></script>
+
+</body>
+
+</html>
