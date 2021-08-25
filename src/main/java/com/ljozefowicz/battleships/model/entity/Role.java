@@ -1,4 +1,4 @@
-package com.ljozefowicz.battleships.entity;
+package com.ljozefowicz.battleships.model.entity;
 
 import com.ljozefowicz.battleships.enums.UserRole;
 import lombok.AllArgsConstructor;

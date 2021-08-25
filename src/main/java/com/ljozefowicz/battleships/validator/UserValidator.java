@@ -1,7 +1,7 @@
 package com.ljozefowicz.battleships.validator;
 
 import com.ljozefowicz.battleships.dto.UserRegistrationDto;
-import com.ljozefowicz.battleships.entity.User;
+import com.ljozefowicz.battleships.model.entity.User;
 import com.ljozefowicz.battleships.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -12,7 +12,6 @@ import org.springframework.validation.Validator;
 
 @Component
 @AllArgsConstructor
-//@Validated
 @ConfigurationProperties(prefix = "messages.properties")
 public class UserValidator implements Validator {
 

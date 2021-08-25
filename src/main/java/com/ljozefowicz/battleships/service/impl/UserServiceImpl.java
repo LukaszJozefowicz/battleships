@@ -1,8 +1,8 @@
 package com.ljozefowicz.battleships.service.impl;
 
 import com.ljozefowicz.battleships.dto.UserRegistrationDto;
-import com.ljozefowicz.battleships.entity.Role;
-import com.ljozefowicz.battleships.entity.User;
+import com.ljozefowicz.battleships.model.entity.Role;
+import com.ljozefowicz.battleships.model.entity.User;
 import com.ljozefowicz.battleships.enums.UserRole;
 import com.ljozefowicz.battleships.repository.UserRepository;
 import com.ljozefowicz.battleships.service.UserService;

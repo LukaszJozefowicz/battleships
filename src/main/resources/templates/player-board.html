@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link th:href="@{/grid.css}" rel="stylesheet" type="text/css"/>
+
+    <title>in-game</title>
+</head>
+
+<body>
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<div class="container" th:insert="index :: board">
+<table id = "myBoard" th:object="${board}">
+    <thead>
+    <tr>
+        <th class="first-cell"></th>
+        <th>A</th>
+        <th>B</th>
+        <th>C</th>
+        <th>D</th>
+        <th>E</th>
+        <th>F</th>
+        <th>G</th>
+        <th>H</th>
+        <th>I</th>
+        <th>J</th>
+    </tr>
+    </thead>
+    <tbody th:object="${counter}">
+    <tr th:each="row, i : ${board}">
+        <td class="bold" th:text="${counter.increment()}"></td>
+        <td class="dataCell" th:each="field : ${board[i.index]}"><input type="button" class="my-btn" th:method="post" th:id="|${field.getX()}${field.getY()}|" th:action="@{/setup/placeShips}" onclick="setShip(this)" th:onclick="|window.location.href='/setup/placeShips?coords=${field.getX()}${field.getY()}'|"></td>
+    </tr>
+    </tbody>
+</table>
+    <script>
+function setShip(that){
+        that.style.backgroundColor = "#0000cd";
+        that.disabled=true;
+        highlightNeighbors(that);
+}
+
+function highlightNeighbors(that){
+    var cells = document.querySelectorAll(".dataCell");
+
+    cells.forEach(function(cell){
+        console.log(parseInt(cell.firstChild.id.substring(0,1)));
+        console.log(parseInt(that.id.substring(0,1)));
+        if(isNeighbor(cell, that)){
+            cell.firstChild.style.backgroundColor = "#6495ed";
+        }
+    })
+}
+
+function isNeighbor(cell, button){
+    if((parseInt(button.id.substring(0,1)) + 1 == parseInt(cell.firstChild.id.substring(0,1)) &&
+        parseInt(button.id.substring(1,2)) == parseInt(cell.firstChild.id.substring(1,2))
+        && parseInt(button.id.substring(0,1)) < 9
+        && cell.firstChild.style.backgroundColor !== "#0000cd")
+
+        || (parseInt(button.id.substring(0,1)) - 1 == parseInt(cell.firstChild.id.substring(0,1)) &&
+        parseInt(button.id.substring(1,2)) == parseInt(cell.firstChild.id.substring(1,2))
+        && parseInt(button.id.substring(0,1)) > 0
+        && cell.firstChild.style.backgroundColor !== "#0000cd")
+
+        || (parseInt(button.id.substring(0,1)) == parseInt(cell.firstChild.id.substring(0,1)) &&
+        parseInt(button.id.substring(1,2)) + 1 == parseInt(cell.firstChild.id.substring(1,2))
+        && parseInt(button.id.substring(1,2)) < 9
+        && cell.firstChild.style.backgroundColor !== "#0000cd")
+
+        || (parseInt(button.id.substring(0,1)) == parseInt(cell.firstChild.id.substring(0,1)) &&
+        parseInt(button.id.substring(1,2)) - 1 == parseInt(cell.firstChild.id.substring(1,2))
+        && parseInt(button.id.substring(1,2)) > 0
+        && cell.firstChild.style.backgroundColor !== "#0000cd")
+
+        ) return true;
+        else return false;
+}
+</script>
+</div>
+
+
+</body>
+
+</html>

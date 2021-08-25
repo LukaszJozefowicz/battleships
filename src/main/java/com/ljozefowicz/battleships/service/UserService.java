@@ -1,7 +1,7 @@
 package com.ljozefowicz.battleships.service;
 
 import com.ljozefowicz.battleships.dto.UserRegistrationDto;
-import com.ljozefowicz.battleships.entity.User;
+import com.ljozefowicz.battleships.model.entity.User;
 
 public interface UserService{
 

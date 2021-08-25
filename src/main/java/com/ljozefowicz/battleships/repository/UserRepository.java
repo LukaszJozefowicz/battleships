@@ -1,6 +1,6 @@
 package com.ljozefowicz.battleships.repository;
 
-import com.ljozefowicz.battleships.entity.User;
+import com.ljozefowicz.battleships.model.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 

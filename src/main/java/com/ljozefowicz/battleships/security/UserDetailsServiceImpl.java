@@ -1,7 +1,7 @@
 package com.ljozefowicz.battleships.security;
 
-import com.ljozefowicz.battleships.entity.Role;
-import com.ljozefowicz.battleships.entity.User;
+import com.ljozefowicz.battleships.model.entity.Role;
+import com.ljozefowicz.battleships.model.entity.User;
 import com.ljozefowicz.battleships.repository.UserRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
