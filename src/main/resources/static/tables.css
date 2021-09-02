@@ -1,0 +1,124 @@
+
+
+html, body {
+    height:100%;
+    background-image: url("battleship-background.jpg");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+}
+
+table.boardTable {
+       border-spacing: 0;
+       border: 1px solid black;
+       background-color: lightBlue;
+}
+
+.my-btn {
+       display:block;
+       background-color: #add8e6;
+       height:100%;
+       width:100%;
+       cursor:pointer;
+       padding: 0;
+       margin: 0;
+       border: 0;
+}
+
+.bold {
+    font-weight:bold;
+}
+
+.first-cell {
+    color:0 !important;
+    border: none !important;
+    opacity: 0.1;
+}
+
+.my-btn:hover {
+   background-color: #1e90ff;
+}
+
+.my-btn:active {
+   background-color: darkBlue;
+}
+
+tr.dataCell {
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+
+td.dataCell, th.dataCell {
+    background-color: #04AA6D;
+    text-align: center;
+    max-width: 30px;
+    min-width: 30px;
+    max-height: 50px;
+    min-height: 50px;
+    padding: 0;
+    margin: 0;
+    border: 1px solid black;
+}
+
+
+table.games {
+       border: 1px solid black;
+       background-color: transparent;
+}
+
+table.users-online {
+       border: 1px solid black;
+       background-color: white;
+}
+
+tr.games {
+    font-weight: bold;
+    text-align: center;
+    padding: 2px 2px 2px 2px;
+    margin: 2px;
+}
+
+td.games {
+    color: red;
+    font-weight: bold;
+    background-color: #add8e6 !important
+    min-width: 200px;
+    padding: 2px 2px 2px 2px;
+    border: 1px solid black;
+}
+
+th.games {
+    background-color: #00bfff;
+    text-align: center;
+    min-width: 200px;
+    padding: 2px 2px 2px 2px;
+    border: 1px solid black;
+}
+
+td.joinButton, th.joinButton {
+    padding: 2px;
+}
+
+td.id-col {
+    background-color: #add8e6
+    padding: 2px 2px 2px 2px;
+    margin: 2px;
+    border: 1px solid black;
+}
+
+th.id-col {
+    background-color: #00bfff;
+    padding: 2px 2px 2px 2px;
+    margin: 2px;
+    border: 1px solid black;
+}
+
+.chat-table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.chat-body {
+  border-top: 10px solid transparent;
+}

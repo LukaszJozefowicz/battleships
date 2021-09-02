@@ -10,8 +10,16 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.authentication.session.*;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
+import org.springframework.security.web.session.SessionInformationExpiredStrategy;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -19,6 +27,34 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     private UserDetailsServiceImpl userDetailsServiceImpl;
+
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    @Bean
+    public CompositeSessionAuthenticationStrategy concurrentSession() {
+
+        ConcurrentSessionControlAuthenticationStrategy concurrentAuthenticationStrategy = new ConcurrentSessionControlAuthenticationStrategy(sessionRegistry());
+        List<SessionAuthenticationStrategy> delegateStrategies = new ArrayList<SessionAuthenticationStrategy>();
+        delegateStrategies.add(concurrentAuthenticationStrategy);
+        delegateStrategies.add(new SessionFixationProtectionStrategy());
+        delegateStrategies.add(new RegisterSessionAuthenticationStrategy(sessionRegistry()));
+
+        return new CompositeSessionAuthenticationStrategy(delegateStrategies);
+    }
+
+
+    @Bean
+    SessionInformationExpiredStrategy sessionInformationExpiredStrategy() {
+        return new CustomSessionInformationExpiredStrategy("/login?logout");
+    }
+
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder(){
@@ -66,6 +102,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .clearAuthentication(true)
                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
                 .logoutSuccessUrl("/login?logout")
-                .permitAll();
+                .permitAll()
+        .and().logout()
+                .logoutSuccessHandler(new CustomLogoutSuccessHandler())
+                .invalidateHttpSession(true);
+//                .and().csrf().disable();
+        http
+                .sessionManagement()
+                .sessionAuthenticationStrategy(concurrentSession())
+                .maximumSessions(1)
+                .expiredSessionStrategy(sessionInformationExpiredStrategy())
+                .expiredUrl("/login?logout");
     }
 }

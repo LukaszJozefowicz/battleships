@@ -14,19 +14,20 @@ import javax.persistence.*;
 @Data
 @Builder
 @Entity
+@Table(name = "games")
 public class Game {
 
     @Id
-    @GeneratedValue(generator = "game_info_sequence")
+    @GeneratedValue(generator = "games_sequence")
     private Long id;
 
-    @ManyToOne
+    @OneToOne
     private User player1;
 
-    @ManyToOne
+    @OneToOne
     private User player2;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.REMOVE)
     @JoinColumn(name="player1_board")
     private Board firstPlayerBoard;
 

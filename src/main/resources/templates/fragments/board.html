@@ -3,26 +3,26 @@
 <!--    style="visibility:hidden"-->
 <!--    <h2 id="shipPlacingInfo" th:with="shipIterator = 0" th:text="|Ships placing phase: place ${shipsToPlace[shipIterator].getType()} ${shipsToPlace[shipIterator].getWhichOfAKind()}|">Placing ships</h2>-->
     <h3 id="shipPlacingInfo">Ship Placement phase. Place ships by clicking</h3>
-    <table id = "myBoard" th:object="${board}">
+    <table id = "boardTable" th:object="${board}">
         <thead>
-        <tr>
-            <th class="first-cell"></th>
-            <th>A</th>
-            <th>B</th>
-            <th>C</th>
-            <th>D</th>
-            <th>E</th>
-            <th>F</th>
-            <th>G</th>
-            <th>H</th>
-            <th>I</th>
-            <th>J</th>
+        <tr class = "gridRow">
+            <th class="first-cell dataCell"></th>
+            <th class="dataCell">A</th>
+            <th class="dataCell">B</th>
+            <th class="dataCell">C</th>
+            <th class="dataCell">D</th>
+            <th class="dataCell">E</th>
+            <th class="dataCell">F</th>
+            <th class="dataCell">G</th>
+            <th class="dataCell">H</th>
+            <th class="dataCell">I</th>
+            <th class="dataCell">J</th>
         </tr>
         </thead>
         <tbody th:object="${counter}">
-        <tr th:each="row, i : ${board}">
-            <td class="bold" th:text="${counter.increment()}"></td>
-            <td class="dataCell" th:each="field : ${board[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:method="get" th:id="|${field.getX()}${field.getY()}|" th:action="@{/setup/placeShips}" onclick="setShip(this)" th:onclick="|setShip(this); window.location.href='/setup/placeShips?coords=${field.getX()}${field.getY()}'|"></td>
+        <tr class = "gridRow" th:each="row, i : ${board}">
+            <td class="bold dataCell" th:text="${counter.increment()}"></td>
+            <td class="dataCell" th:each="field : ${board[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:method="get" th:id="|${field.getX()}${field.getY()}|" th:action="@{/setup/placeShips}" onclick="setShip(this)" th:onclick="|setShip(this); window.location.href='/placeShips?coords=${field.getX()}${field.getY()}'|"></td>
         </tr>
         </tbody>
     </table>
@@ -81,7 +81,7 @@ function setShip(that){
 
         highlightNeighbors();
 
-        if(whichFieldOfShip == 1)
+        if(whichFieldOfShip === 1)
             disableFieldsAroundPlacedShip();
 
         if(whichShip === shipsToPlace.length)

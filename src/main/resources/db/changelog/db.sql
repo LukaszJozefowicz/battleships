@@ -37,31 +37,31 @@ insert into roles (id, name) values(1, 'ROLE_USER');
 insert into roles (id, name) values(2, 'ROLE_ADMIN');
 
 --changeset lukasz:6
-CREATE TABLE IF NOT EXISTS board (
+CREATE TABLE IF NOT EXISTS boards (
     id BIGINT NOT NULL,
     persisted_board text,
     CONSTRAINT board_pk PRIMARY KEY (id)
 );
 
 --changeset lukasz:7
-CREATE TABLE IF NOT EXISTS game_info (
+CREATE TABLE IF NOT EXISTS games (
     id BIGINT NOT NULL,
     player1_id BIGINT NOT NULL,
-    player2_id BIGINT NOT NULL,
+    player2_id BIGINT,
     game_state VARCHAR(20) NOT NULL,
     player1_board BIGINT NOT NULL,
-    player2_board BIGINT NOT NULL,
+    player2_board BIGINT,
     player_turn VARCHAR(20) NOT NULL,
-    CONSTRAINT game_info_pk PRIMARY KEY (id),
-    CONSTRAINT game_info_fk_1 FOREIGN KEY (player1_id) REFERENCES users(id),
-    CONSTRAINT game_info_fk_2 FOREIGN KEY (player2_id) REFERENCES users(id),
-    CONSTRAINT game_info_fk_3 FOREIGN KEY (player1_board) REFERENCES board(id),
-    CONSTRAINT game_info_fk_4 FOREIGN KEY (player2_board) REFERENCES board(id)
+    CONSTRAINT games_pk PRIMARY KEY (id),
+    CONSTRAINT games_fk_1 FOREIGN KEY (player1_id) REFERENCES users(id),
+    CONSTRAINT games_fk_2 FOREIGN KEY (player2_id) REFERENCES users(id),
+    CONSTRAINT games_fk_3 FOREIGN KEY (player1_board) REFERENCES boards(id),
+    CONSTRAINT games_fk_4 FOREIGN KEY (player2_board) REFERENCES boards(id)
 );
 
 --changeset lukasz:8
-CREATE SEQUENCE IF NOT EXISTS game_info_sequence OWNED BY game_info.id;
-CREATE SEQUENCE IF NOT EXISTS board_sequence OWNED BY board.id;
+CREATE SEQUENCE IF NOT EXISTS games_sequence OWNED BY games.id;
+CREATE SEQUENCE IF NOT EXISTS boards_sequence OWNED BY boards.id;
 
 --changeset lukasz:9
 create table if not exists allowed_ships
@@ -86,7 +86,7 @@ create table if not exists ships
     fields varchar(100),
     board_id bigint,
     CONSTRAINT ships_pk primary key (id),
-    CONSTRAINT ships_fk FOREIGN KEY (board_id) REFERENCES board(id)
+    CONSTRAINT ships_fk FOREIGN KEY (board_id) REFERENCES boards(id)
 );
 
 --changeset lukasz:11

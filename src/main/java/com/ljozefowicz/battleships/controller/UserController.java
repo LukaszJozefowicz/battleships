@@ -11,6 +11,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
+
 @Controller
 @AllArgsConstructor
 @RequestMapping("/")
@@ -22,16 +24,17 @@ public class UserController {
 
 
     @GetMapping("/login")
-    public String login(){
+    public String login(@RequestParam(required = false) String logout, @RequestParam(required = false) String expired, HttpServletRequest request){
+
         return "login";
     }
 
     @GetMapping("/")
     public String getHomePage(Model model){
-        Board board = boardService.initializeBoard();
-        model.addAttribute("board", boardService.getFieldsList(board));
-        model.addAttribute("counter", new Counter(0));
-        model.addAttribute("shipsToPlace", new Gson().toJson(allowedShipService.getListOfShipsToPlace()));
+//        Board board = boardService.initializeBoard(1L);
+//        model.addAttribute("board", boardService.getFieldsList(board));
+//        model.addAttribute("counter", new Counter(0));
+//        model.addAttribute("shipsToPlace", new Gson().toJson(allowedShipService.getListOfShipsToPlace()));
         return "index";
     }
 }

@@ -1,0 +1,30 @@
+.new-game-info{
+    font-weight: bold;
+}
+
+.block-normal{
+    display:flex;
+    justify-content:space-between;
+}
+.block-in{
+    display: inline-block;
+    float: left;
+}
+.block-right{
+    display: inline-block;
+    float: right;
+    margin-right: 0;
+    padding-right: 0;
+}
+tr.chat-area, td.chat-area{
+    padding: 0px 0px 0px 0px;
+}
+form {
+     margin:0px;
+     padding:0px;
+     display:inline;
+}
+textarea {
+    width: 100%;
+    height: 100%;
+}

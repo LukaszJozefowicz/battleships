@@ -35,10 +35,11 @@ public class BoardServiceImpl implements BoardService{
         FieldStatus[][] fieldStatusArray = new FieldStatus[10][10];
         Arrays.stream(fieldStatusArray).forEach(e -> Arrays.fill(e, FieldStatus.EMPTY));
         Board boardToSave = Board.builder()
-                .id(1L)
+                //.id(id)
                 .persistedBoard(new Gson().toJson(fieldStatusArray))
-                .ships(initializeListOfShips(this.getBoardById(1L)))
+                .ships(initializeListOfShips())
                 .build();
+        boardToSave.getShips().forEach(e -> e.setBoard(boardToSave));
         return boardRepository.save(boardToSave);
     }
 
@@ -99,12 +100,7 @@ public class BoardServiceImpl implements BoardService{
         return fieldStatusArray;
     }
 
-//    private int getSumOfShipFields() {
-//        return allowedShipRepository.findAll().stream()
-//                .reduce(0, (subtotal, element) -> subtotal + element.getNumberOfAllowed(), Integer::sum);
-//    }
-
-    private List<Ship> initializeListOfShips(Board board){
+    private List<Ship> initializeListOfShips(){
         List<Ship> listOfShips = new ArrayList<>();
         List<AllowedShip> listOfAllowedShips = allowedShipRepository.findAll();
 
@@ -113,7 +109,7 @@ public class BoardServiceImpl implements BoardService{
                 listOfShips.add(Ship.builder()
                         .type(allowedShip.getType())
                         .length(allowedShip.getLength())
-                        .board(board)
+                        //.board(board)
                         .build());
             }
         }

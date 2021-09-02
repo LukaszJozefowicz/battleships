@@ -18,10 +18,11 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "boards")
 public class Board {
 
     @Id
-    @GeneratedValue(generator = "board_sequence")
+    @GeneratedValue(generator = "boards_sequence")
     private Long id;
 
     @Column(name = "persisted_board", columnDefinition = "text")
