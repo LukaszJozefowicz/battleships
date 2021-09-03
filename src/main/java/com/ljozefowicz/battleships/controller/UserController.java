@@ -12,6 +12,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 @Controller
 @AllArgsConstructor
@@ -24,8 +25,7 @@ public class UserController {
 
 
     @GetMapping("/login")
-    public String login(@RequestParam(required = false) String logout, @RequestParam(required = false) String expired, HttpServletRequest request){
-
+    public String login(){
         return "login";
     }
 

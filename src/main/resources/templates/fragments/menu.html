@@ -19,6 +19,7 @@
                 <li><a th:href="@{/placeShips}">Place ships</a></li>
                 <li><a th:href="@{/finishGame}">Finish game</a></li>
                 <li sec:authorize="isAuthenticated()"><a th:href="@{/logout}">Logout</a></li>
+                <li><a href="#" style="pointer-events: none;cursor: default;text-color: red">Auto logout in <i class="glyphicon glyphicon-time"></i><span id="countdown"></span></a></li>
             </ul>
         </div>
     </div>

@@ -8,66 +8,36 @@ let authenticatedUserTag = document.getElementById("currentUsername");
 let authenticatedUserName = authenticatedUserTag.innerHTML;
 
 window.onload = function load(){
-    console.log("page loaded");
+    resetTimer();
+    idleLogout();
     connect();
     document.getElementById("chatOutput").value = "";
     document.getElementById("chatInput").focus();
 }
 window.onbeforeunload = function unload(){
-    console.log("page left");
     disconnect();
+    window.location = '/logout';
 }
 
 document.getElementById("chatInput").addEventListener("keypress", submitMsgOnEnter);
 
 function connect(){
-    // Try to set up WebSocket connection with the handshake at "http://localhost:8080/stomp"
+
     socket = new SockJS("http://localhost:8080/websocket");
 
-    // Create a new StompClient object with the WebSocket endpoint
     client = Stomp.over(socket);
 
-    // Start the STOMP communications, provide a callback for when the CONNECT frame arrives.
-    /*client.connect({}, frame => {
-
-        client.subscribe("/gameLobby", payload => {
-
-            let usersList = document.getElementById('usersList');
-            //let joinedUser = document.createElement('li');
-            //joinedUser.id = JSON.parse(payload.body);
-            activeUsersList = JSON.parse(payload.body);
-            console.log("payload body " + payload.body);
-            console.log("json parsed " + JSON.parse(payload.body))
-            //currentUserId = joinedUser.id;
-            for(var user of activeUsersList){
-                let joinedUser = document.createElement('li');
-                joinedUser.appendChild(document.createTextNode(user));
-                usersList.appendChild(joinedUser);
-            }
-
-//            joinedUser.appendChild(document.createTextNode(JSON.parse(payload.body)));
-//            usersList.appendChild(joinedUser);
-
-            console.log("Connected!!!!!!");
-        });
-
-        //let authenticatedUserTag = document.getElementById("currentUsername");
-        //let authenticatedUserName = authenticatedUserTag.innerHTML;
-        client.send('/ws/listOfUsers', {}, JSON.stringify(activeUsersList));
-        console.log("stringified data: " + JSON.stringify(activeUsersList));
-
-    });*/
     client.connect({}, frame => {
 
             var payloadBody = null;
             client.subscribe("/gameLobby", payload => {
 
                 payloadBody = JSON.parse(payload.body);
-                console.log("payload body " + payload.body);
-                console.log("json parsed " + payloadBody)
-                console.log("payload body username " + payloadBody.username);
-                console.log("payload body message " + payloadBody.message);
-                console.log("is array " + Array.isArray(payloadBody));
+//                console.log("payload body " + payload.body);
+//                console.log("json parsed " + payloadBody)
+//                console.log("payload body username " + payloadBody.username);
+//                console.log("payload body message " + payloadBody.message);
+//                console.log("is array " + Array.isArray(payloadBody));
                 if(Array.isArray(payloadBody)){
                     let usersTableBody = document.getElementById('users-online-tbody');
                     usersTableBody.remove();
@@ -92,6 +62,9 @@ function disconnect(){
         let authenticatedUserTag = document.getElementById("currentUsername");
         let authenticatedUserName = authenticatedUserTag.innerHTML;
         activeUsersList = activeUsersList.filter(e => e !== authenticatedUserName);
+        if(activeUsersList == 0 || activeUsersList == null)
+            activeUsersList = [];
+
         client.send('/ws/userLeft', {}, JSON.stringify(activeUsersList));
         client.send('/ws/sendToChat', {}, JSON.stringify({username: authenticatedUserName, message: " left the lobby\n"}));
 
@@ -101,25 +74,12 @@ function disconnect(){
     }
 }
 
-/*function sendChatMessage(){
-
-        let authenticatedUserTag = document.getElementById("currentUsername");
-        let authenticatedUserName = authenticatedUserTag.innerHTML;
-        let textOutput = document.getElementById("chatOutput");
-        textOutput.value += authenticatedUserName + ":" + textToSend;
-
-        client.send('/ws/sendToChat', {}, JSON.stringify({username: authenticatedUserName, message: textToSend}));
-//        client.send('/ws/sendToChat', {}, JSON.stringify({username: authenticatedUserName}));
-
-}*/
 
 function submitMsgOnEnter(){
 
     let textInput = document.getElementById("chatInput");
     chatText = textInput.value;
-//
-//    let textOutput = document.getElementById("chatOutput");
-//    textOutput.value += authenticatedUserName + ":" + chatText;
+
 
     if(event.which === 13){
 
@@ -133,12 +93,6 @@ function submitMsgOnEnter(){
 }
 
 function receiveMessage(payloadBody){
-//    let authenticatedUserTag = document.getElementById("currentUsername");
-//    let authenticatedUserName = authenticatedUserTag.innerHTML;
-//    let textInput = document.getElementById("chatInput");
-//    chatText = textInput.value;
-//    chatText = document.chatForm.chatInput.value;
-//    console.log("input text: " + payloadBody.message)
 
     let textOutput = document.getElementById("chatOutput");
     textOutput.value += payloadBody.username + ":" + payloadBody.message + "\n";

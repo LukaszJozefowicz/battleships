@@ -37,7 +37,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     public CompositeSessionAuthenticationStrategy concurrentSession() {
 
         ConcurrentSessionControlAuthenticationStrategy concurrentAuthenticationStrategy = new ConcurrentSessionControlAuthenticationStrategy(sessionRegistry());
-        List<SessionAuthenticationStrategy> delegateStrategies = new ArrayList<SessionAuthenticationStrategy>();
+        List<SessionAuthenticationStrategy> delegateStrategies = new ArrayList<>();
         delegateStrategies.add(concurrentAuthenticationStrategy);
         delegateStrategies.add(new SessionFixationProtectionStrategy());
         delegateStrategies.add(new RegisterSessionAuthenticationStrategy(sessionRegistry()));
@@ -102,16 +102,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .clearAuthentication(true)
                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
                 .logoutSuccessUrl("/login?logout")
-                .permitAll()
-        .and().logout()
-                .logoutSuccessHandler(new CustomLogoutSuccessHandler())
-                .invalidateHttpSession(true);
-//                .and().csrf().disable();
+                .permitAll();
         http
                 .sessionManagement()
                 .sessionAuthenticationStrategy(concurrentSession())
                 .maximumSessions(1)
-                .expiredSessionStrategy(sessionInformationExpiredStrategy())
-                .expiredUrl("/login?logout");
+                .expiredSessionStrategy(sessionInformationExpiredStrategy());
     }
 }

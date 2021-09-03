@@ -1,6 +1,7 @@
 package com.ljozefowicz.battleships.config;
 
 import com.ljozefowicz.battleships.dto.mapper.DtoMapper;
+import com.ljozefowicz.battleships.model.ActiveUsersList;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -10,6 +11,11 @@ public class AppConfig {
     @Bean
     public DtoMapper dtoMapper(){
         return new DtoMapper();
+    }
+
+    @Bean
+    public ActiveUsersList activeUsersList(){
+        return new ActiveUsersList();
     }
 
 //    @Bean
