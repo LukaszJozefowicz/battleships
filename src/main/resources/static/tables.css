@@ -12,6 +12,16 @@ table.boardTable {
        border-spacing: 0;
        border: 1px solid black;
        background-color: lightBlue;
+       display: inline-block;
+       float: left;
+}
+
+table.boardTableOpponent {
+       border-spacing: 0;
+       border: 1px solid black;
+       background-color: lightBlue;
+       display: inline-block;
+       float: right;
 }
 
 .my-btn {
@@ -43,13 +53,13 @@ table.boardTable {
    background-color: darkBlue;
 }
 
-tr.dataCell {
+tr.dataCell, tr.tableHeadCell, tr.counterCell {
     padding: 0;
     margin: 0;
     border: 0;
 }
 
-td.dataCell, th.dataCell {
+td.dataCell, th.tableHeadCell, td.counterCell {
     background-color: #04AA6D;
     text-align: center;
     max-width: 30px;
@@ -122,3 +132,6 @@ th.id-col {
 .chat-body {
   border-top: 10px solid transparent;
 }
+
+.floatLeft { width: 50%; float: left; }
+.floatRight {width: 50%; float: right; }

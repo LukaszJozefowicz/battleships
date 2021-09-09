@@ -29,12 +29,12 @@ public class UserController {
         return "login";
     }
 
-    @GetMapping("/")
+    /*@GetMapping("/")
     public String getHomePage(Model model){
 //        Board board = boardService.initializeBoard(1L);
 //        model.addAttribute("board", boardService.getFieldsList(board));
 //        model.addAttribute("counter", new Counter(0));
 //        model.addAttribute("shipsToPlace", new Gson().toJson(allowedShipService.getListOfShipsToPlace()));
         return "index";
-    }
+    }*/
 }

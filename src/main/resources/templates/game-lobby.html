@@ -14,7 +14,7 @@
         <h3 style="text-align: center;">ONLINE LOBBY</h3>
         <br/>
         <h3 id="availableGames">Available games:</h3>
-        <table class="lobby" id="hideTableIfEmpty" th:object="${games}">
+        <table class="lobby" id="gamesTable" th:object="${games}">
             <thead>
             <tr class="games">
                 <th class="id-col">Game id</th>
@@ -23,7 +23,7 @@
                 <th class="joinButton"></th>
             </tr>
             </thead>
-            <tbody>
+            <tbody id = "gamesTableBody">
             <tr class="games" th:each="row : ${games}">
                 <td class="id-col" th:text="${row.getId()}"></td>
                 <td class="games" th:text="${row.player1}==null ? 'waiting for player' : ${row.player1.getUsername()}"></td>
@@ -33,24 +33,24 @@
             </tbody>
         </table>
         <br>
-        <button id="createNewGame" type="button" class="bold" th:object="${createdGame}" onclick="window.location.href='/newGame'" th:style="${createdGame} == null ? 'visibility:visible' : 'visibility:hidden'">Create new game</button>
+        <button id="createNewGame" type="button" class="bold" th:object="${createdGame}" onclick="createNewGame()" th:style="${createdGame} == null ? 'visibility:visible' : 'visibility:hidden'">Create new game</button>
         <button id="send" type="button" class="bold" th:object="${createdGame}" onclick="usun()" th:style="${createdGame} == null ? 'visibility:visible' : 'visibility:hidden'">send</button>
         <button id="disconnect" type="button" class="bold" th:object="${createdGame}" onclick="disconnect()" th:style="${createdGame} == null ? 'visibility:visible' : 'visibility:hidden'">disconnect</button>
     </div>
 
     <div class="container block-right">
 
-    <!--    <h3>Users online:</h3>-->
         <table class="users-online" id="users-online" th:object="${loggedUsers}" align="right">
             <thead>
                 <tr>
-                    <th class="games">Users in lobby:</th>
+                    <th class="games">Users online:</th>
                 </tr>
             </thead>
             <tbody id="users-online-tbody">
-                <tr th:id="|'tr' + ${username}|" class="games active-user-row" th:each="username : ${loggedUsers}">
-                    <td th:id="|'td' + ${username}|" class="games" th:text="${username}"></td>
-                </tr>
+            <tr><td></td></tr>
+<!--                <tr th:id="|'tr' + ${username}|" class="games active-user-row" th:each="username : ${loggedUsers}">-->
+<!--                    <td th:id="|'td' + ${username}|" class="games" th:text="${username}"></td>-->
+<!--                </tr>-->
             </tbody>
         </table>
 
@@ -74,8 +74,6 @@
         Welcome <span id="currentUsername" sec:authentication="principal.username">User</span>
     </p>
 </div>
-
-<ul id="chatList"></ul>
 
 <script type="text/javascript" th:src="@{/webjars/jquery/3.6.0/jquery.min.js/}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/3.3.7/js/bootstrap.min.js}"></script>

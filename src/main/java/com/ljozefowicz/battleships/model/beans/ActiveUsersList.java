@@ -1,4 +1,4 @@
-package com.ljozefowicz.battleships.model;
+package com.ljozefowicz.battleships.model.beans;
 
 import lombok.Data;
 
@@ -12,5 +12,6 @@ public class ActiveUsersList {
 
     public ActiveUsersList(){
         usersList = new ArrayList<>();
+        usersList.add("usersList");
     }
 }

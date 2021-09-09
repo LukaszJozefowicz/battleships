@@ -21,17 +21,17 @@ public class Game {
     @GeneratedValue(generator = "games_sequence")
     private Long id;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.EAGER)
     private User player1;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.EAGER)
     private User player2;
 
-    @OneToOne(cascade = CascadeType.REMOVE)
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
     @JoinColumn(name="player1_board")
     private Board firstPlayerBoard;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
     @JoinColumn(name="player2_board")
     private Board secondPlayerBoard;
 
