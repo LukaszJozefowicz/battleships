@@ -59,13 +59,13 @@ public class GameLobbyController {
     @MessageMapping("/userLeft")
     @SendTo("/gameLobby")
     public String sendUsersListAfterUserLeft(String jsonList){
-//        System.out.println("user left json list string: " + jsonList);
+        System.out.println("user left json list string: " + jsonList);
         Type listType = new TypeToken<ArrayList<String>>(){}.getType();
         List<String> listFromJson = new Gson().fromJson(jsonList, listType);
-        System.out.println("java list");
-//        for (String s : listFromJson){
-//            System.out.println(s + " ");
-//        }
+
+        for (String s : listFromJson){
+            System.out.println(s + " ");
+        }
         activeUsersList.setUsersList(listFromJson);
         return jsonList;
     }
@@ -135,15 +135,16 @@ public class GameLobbyController {
         Game createdGame = gameService.findGameByPlayer1Username(principal.getName());
         System.out.println("game id: " + gameId);
 
-        if(gameId != null) {
+        if(gameId != null && !createdGame.getGameState().equals(GameState.SHIPS_SETUP)) {
 //            System.out.println("deleting game " + createdGame);
             System.out.println("deleting game to dto" + dtoMapper.mapToGameDto(createdGame));
             gameService.deleteGame(gameId);
             activeGamesList.getGamesList().remove(dtoMapper.mapToGameDto(createdGame));
         }
 
+        //remove player from game that he joined and it didn't start yet
         Game possibleGameJoined = gameService.findGameByPlayer2Username(principal.getName());
-        if(possibleGameJoined != null){
+        if(possibleGameJoined != null && !possibleGameJoined.getGameState().equals(GameState.SHIPS_SETUP)){
             possibleGameJoined.setPlayer2(null);
             possibleGameJoined.setGameState(GameState.WAITING_FOR_PLAYERS);
             gameService.updateGameState(possibleGameJoined);
@@ -158,7 +159,7 @@ public class GameLobbyController {
             activeGamesList.getGamesList().get(index).setGameState(GameState.WAITING_FOR_PLAYERS.name());
         }
 
-        for(GameDto g : activeGamesList.getGamesList()) System.out.println("gamesListAfterLeft: "+g);
+        //for(GameDto g : activeGamesList.getGamesList()) System.out.println("gamesListAfterLeft: "+g);
         return new Gson().toJson(activeGamesList.getGamesList(), List.class);
     }
 
@@ -172,13 +173,19 @@ public class GameLobbyController {
 
     @MessageMapping("/newGame/redirect")
     @SendToUser("/queue/notify")
-    public void notifyUserNewGameStarted(@Payload String msg){
+    public void notifyUserNewGameStarted(@Payload String msg, Principal principal){
         GameDto gameToStart = new Gson().fromJson(msg, GameDto.class);
+
+        Game game = gameService.findGameById(gameToStart.getId());
+        game.setGameState(GameState.SHIPS_SETUP);
+        gameService.updateGameState(game);
+
+        int index = activeGamesList.getGamesList().indexOf(gameToStart);
+        activeGamesList.getGamesList().get(index).setGameState(GameState.GAME_IN_PROGRESS.name());
+
         System.out.println("game to start: " + gameToStart);
         messagingTemplate.convertAndSendToUser(gameToStart.getPlayer2(), "/queue/notify", msg);
         messagingTemplate.convertAndSendToUser(gameToStart.getPlayer1(), "/queue/notify", msg);
-        //System.out.println("return value: " + new Gson().fromJson(msg, Map.class).get("player2").toString());
-        //return new Gson().fromJson(msg, Map.class).get("player2").toString();
     }
 
     //------------ non-websocket controllers --------------
@@ -194,21 +201,4 @@ public class GameLobbyController {
 
         return "game-lobby";
     }
-
-//    @GetMapping("/joinGame/{gameId}")
-//    public ResponseEntity<Void> joinGame(Principal principal, @PathVariable Long gameId){
-//        gameService.joinGameById(gameId, principal.getName());
-//        GameDto gameDto = activeGamesList.getGamesList()
-//                .stream()
-//                .filter(g -> g.getId().equals(gameId))
-//                .findFirst()
-//                .orElse(null);
-//        int index = activeGamesList.getGamesList().indexOf(gameDto);
-//        System.out.println("index: " + index);
-//
-//        activeGamesList.getGamesList().get(index).setPlayer2(principal.getName());
-//        for(GameDto g : activeGamesList.getGamesList()) System.out.println("listAfterJoin: "+g);
-//
-//        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-//    }
 }

@@ -86,7 +86,7 @@ function disconnect(){
 
         client.send('/ws/userLeft', {}, JSON.stringify(activeUsersList));
         client.send('/ws/sendToChat', {}, JSON.stringify({username: authenticatedUserName, message: " left the lobby\n"}));
-        //client.send('/ws/deleteGame', {}, JSON.stringify(activeGamesList));
+        client.send('/ws/deleteGame', {}, JSON.stringify(activeGamesList));
 
         client.disconnect(payload => {
             client.disconnect();
@@ -185,23 +185,24 @@ function generateGamesTable(){
                     td = document.createElement('td');
                     td.classList.add('joinButton');
                     let input = document.createElement('input');
-                    if(activeGamesList[i].player1 === authenticatedUserName && activeGamesList[i].player2 === "waiting for player"){
+                    if(activeGamesList[i].gameState === "GAME_IN_PROGRESS"){
+                                createInputField(input, 'text', 'Game in progress', 'gameInProgressInfo', null);
+                                input.readOnly = true;
+                    } else if(activeGamesList[i].player1 === authenticatedUserName && activeGamesList[i].player2 === "waiting for player"){
                                 let onclickValue = "leaveGame()";
-                                createButton(input, 'button', 'Leave', 'bold', onclickValue);
+                                createInputField(input, 'button', 'Leave', 'bold', onclickValue);
                     } else if(activeGamesList[i].player1 === authenticatedUserName
                         && activeGamesList[i].player2 !== "waiting for player"){
-                                console.log("I'm in THAT if!!!!!!!!!!!!!!!!");
                                 let onclickValue = "newGameRedirect(" + JSON.stringify(activeGamesList[i]) + ")";
-                                createButton(input, 'button', 'Start', 'bold', onclickValue);
-                    } else if(//activeGamesList[i].player1 === authenticatedUserName
-                        //|| activeGamesList[i].player2 !== "waiting for player"
-                        isPlayerJoinedGame
+                                createInputField(input, 'button', 'Start', 'bold', onclickValue);
+                    } else if(activeGamesList[i].player2 !== "waiting for player"
+                        || isPlayerJoinedGame
                         || isPlayerCreatedGame){
                                 let onclickValue = "joinGame("+activeGamesList[i].id+")";
-                                createButton(input, 'hidden', 'Join', 'bold', onclickValue);
+                                createInputField(input, 'hidden', 'Join', 'bold', onclickValue);
                     } else {
                                 let onclickValue = "joinGame("+activeGamesList[i].id+")";
-                                createButton(input, 'button', 'Join', 'bold', onclickValue);
+                                createInputField(input, 'button', 'Join', 'bold', onclickValue);
                     }
 
                     td.appendChild(input);
@@ -228,6 +229,7 @@ function joinGame(id){
                     [{"id":0,"player1":"string","player2":"string","gameState":"string"}]));
     let player2td = document.getElementById("player2spot" + id);
     player2td.innerHTML = authenticatedUserName;
+    document.getElementById('createNewGame').disabled = true;
 }
 
 function leaveGame(){
@@ -236,7 +238,7 @@ function leaveGame(){
     document.getElementById('createNewGame').disabled = false;
 }
 
-function createButton(element, type, value, className, onclickValue){
+function createInputField(element, type, value, className, onclickValue){
     element.type = type;
     element.value = value;
     element.className = className;
@@ -244,6 +246,9 @@ function createButton(element, type, value, className, onclickValue){
 }
 
 function newGameRedirect(payload){
+
+    activeUsersList = activeUsersList.filter(e => e !== payload.player1 && e !== payload.player2);
+    client.send('/ws/userLeft', {}, JSON.stringify(activeUsersList));
     client.send('/ws/newGame/redirect', {}, JSON.stringify(
                     {"id":payload.id,
                     "player1":payload.player1,

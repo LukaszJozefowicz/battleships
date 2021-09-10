@@ -24,7 +24,7 @@ table.boardTableOpponent {
        float: right;
 }
 
-.my-btn {
+.my-btn, .opp-btn {
        display:block;
        background-color: #add8e6;
        height:100%;
@@ -107,6 +107,8 @@ th.games {
 }
 
 td.joinButton, th.joinButton {
+    align: left;
+    text-align: left;
     padding: 2px;
 }
 
@@ -133,5 +135,18 @@ th.id-col {
   border-top: 10px solid transparent;
 }
 
-.floatLeft { width: 50%; float: left; }
-.floatRight {width: 50%; float: right; }
+.floatLeft {
+    width: 50%; float: left;
+}
+
+.floatRight {
+    width: 50%; float: right;
+}
+
+.gameInProgressInfo {
+    color: red;
+    font-weight:bold;
+    background-color: transparent;
+    border:none;
+    outline:none;
+}

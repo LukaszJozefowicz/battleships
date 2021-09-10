@@ -2,6 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
 
 <head th:insert="fragments/header :: head">
+
     <title>Battleships app</title>
 </head>
 
@@ -13,35 +14,7 @@
 <br>
 <br>
 
-<div class="container" th:object="${game}">
-<!--    <p class="new-game-info" th:text="|Game Id: ${game.getId()}|">Game Id: </p>-->
-<!--    <p class="new-game-info">Player1: <span sec:authentication="principal.username">Username</span></p>-->
-<!--    <p class="new-game-info" th:text="${game.player1}==null ? 'Player1: waiting for player' : |Player1: ${game.player1.getUsername()}|"></p>-->
-<!--    <p class="new-game-info" th:text="${game.player2}==null ? 'Player2: waiting for player' : |Player2: ${game.player2.getUsername()}|"></p>-->
-<!--    <p class="new-game-info" th:if="${game.player1}!=null"  th:text="|Player1: ${game.player1.getUsername()}|">Player1</p>-->
-<!--    <p class="new-game-info" th:if="${game.player2}!=null"  th:text="|Player2: ${game.player2.getUsername()}|">Player2</p>-->
-<!--    <p class="new-game-info" th:if="${game.player2}==null">Player2: waiting for player</p></p>-->
-<!--    <p class="new-game-info" th:if="${game.player2}!=null"><p th:text="|Player2: ${game.player2.getUsername()}|">Player2: waiting for player</p></p>-->
-    <h3 id="New game created. Wait for another player to join">Available games:</h3>
-    <table id="games" th:object="${game}">
-        <thead>
-        <tr class="games">
-            <th class="id-col">Game id</th>
-            <th class="games">Player1</th>
-            <th class="games">Player2</th>
-            <th class="joinButton"></th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr class="games">
-            <td class="id-col" th:text="${game.getId()}"></td>
-            <td class="games" th:text="${game.player1}==null ? 'waiting for player' : ${game.player1.getUsername()}"></td>
-            <td class="games" th:text="${game.player2}==null ? 'waiting for player' : ${game.player2.getUsername()}"></td>
-            <td class="joinButton"><input type="button" class="bold" value="Start game" style="visibility: hidden;"></td>
-        </tr>
-        </tbody>
-    </table>
-</div>
+<div class="container" th:replace="fragments/boards :: boards"></div>
 
 <div class="container">
 
@@ -53,7 +26,11 @@
 
 <script type="text/javascript" th:src="@{/webjars/jquery/3.6.0/jquery.min.js/}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/3.3.7/js/bootstrap.min.js}"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.js" integrity="sha512-lyIq9fRcCeSCXhp41XC/250UBmypAHV8KW+AhLcSEIksWHBfhzub6XXwDe67wTpOG8zrO2NAU/TYmEaCW+aQSg==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js" integrity="sha512-iKDtgDyTHjAitUDdLljGhenhPwrbBfqTKWO1mkhSFH3A7blITC9MhYon6SjnMhp4o0rADGw9yAC6EW4t5a4K3g==" crossorigin="anonymous"></script>
+<script src="/webSocketNewGame.js" type="text/javascript"></script>
+<script src="/logoutTimeout.js" type="text/javascript"></script>
+<script src="/shipsSetup.js" type="text/javascript"></script>
 </body>
 
 </html>

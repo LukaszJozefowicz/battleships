@@ -49,14 +49,14 @@ public class BoardServiceImpl implements BoardService{
         List<List<Field>> cellsList = getFieldsList(board);
         final int col = (int)coords.charAt(0) - 48, //48 is digit 0 in ascii
                   row = (int)coords.charAt(1) - 48;
-        System.out.println("col = " + col + " row = " + row);
+        //System.out.println("col = " + col + " row = " + row);
         final Field updatedField = Field.builder()
                 .fieldStatus(fieldStatus)
                 .coords(coords)
                 .x(col)
                 .y(row)
                 .build();
-        System.out.println("updated field = " + updatedField.toString());
+        //System.out.println("updated field = " + updatedField.toString());
         cellsList.get(row).set(col, updatedField);
         board.setPersistedBoard(new Gson().toJson(listOfFieldsToArray2D(cellsList)));
 
