@@ -26,7 +26,7 @@ window.onbeforeunload = function unload(){
 
 function connect(){
 
-    socket = new SockJS("http://localhost:8080/websocket");
+    socket = new SockJS("https://battleships-spring-boot.herokuapp.com/websocket");
 
     client = Stomp.over(socket);
 
