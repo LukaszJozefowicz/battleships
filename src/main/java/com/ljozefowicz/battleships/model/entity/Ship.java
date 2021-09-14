@@ -23,9 +23,12 @@ public class Ship {
 
     private String type;
 
-    private int length;
+    private Integer length;
 
     private String fields;
+
+    @Column(name = "is_destroyed")
+    private Boolean isDestroyed = false;
 
     @JsonBackReference
     @ManyToOne()

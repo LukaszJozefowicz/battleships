@@ -9,8 +9,34 @@ function resetBoard(){
 
     cells.forEach(function(cell){
         cell.style.backgroundColor = "#add8e6";  //default color
+        cell.style.cursor = "default";
+        cell.disabled=false;
+        cell.setAttribute('fieldstatus', 'empty');
+
+        $(cell).on({
+                mouseenter: function() {
+
+                    if($(cell).attr('fieldstatus') == 'empty' && $(cell).is(':enabled')){
+                        this.style.backgroundColor = "#1e90ff";
+                    }
+                    if(($(cell).attr('fieldstatus') == 'empty' || $(cell).attr('fieldstatus') == 'highlighted')
+                        && $(cell).is(':enabled')){
+                        this.style.cursor = "pointer";
+                    }
+                },
+                mouseleave: function() {
+                    if($(cell).attr('fieldstatus') == 'empty'){
+                        this.style.backgroundColor = "#add8e6";
+                    }
+                    this.style.cursor = "default";
+                }
+        });
+        document.getElementById("shipPlacingInfo").innerHTML = "Ship Placement phase."
+                    + "<br>Place ships by clicking."
+                    + "<br>Longest ships first."
 
     })
+    sendResetBoard();
 }
 
 function setShipPlacementInfo(){
@@ -54,7 +80,8 @@ function setPlacementInfoText(which){
             }
 
             document.getElementById("shipPlacingInfo").innerHTML = placementInfoText;
-            sendPlacementInfoToOpponent(shipsToPlace[which].type, shipsToPlace[which].whichOfAKind, "false");
+            if(socket.readyState === 1)
+                sendPlacementInfoToOpponent(shipsToPlace[which].type, shipsToPlace[which].whichOfAKind, "false");
 }
 
 function setShip(that){

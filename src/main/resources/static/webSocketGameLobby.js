@@ -26,7 +26,7 @@ window.onbeforeunload = function unload(){
 
 function connect(){
 
-    socket = new SockJS("https://battleships-spring-boot.herokuapp.com/websocket");
+    socket = new SockJS("http://localhost:8080/websocket");//https://battleships-spring-boot.herokuapp.com/websocket
 
     client = Stomp.over(socket);
 
@@ -185,10 +185,10 @@ function generateGamesTable(){
                     td = document.createElement('td');
                     td.classList.add('joinButton');
                     let input = document.createElement('input');
-                    if(activeGamesList[i].gameState === "GAME_IN_PROGRESS"){
+                    /*if(activeGamesList[i].gameState === "GAME_IN_PROGRESS"){
                                 createInputField(input, 'text', 'Game in progress', 'gameInProgressInfo', null);
                                 input.readOnly = true;
-                    } else if(activeGamesList[i].player1 === authenticatedUserName && activeGamesList[i].player2 === "waiting for player"){
+                    } else */if(activeGamesList[i].player1 === authenticatedUserName && activeGamesList[i].player2 === "waiting for player"){
                                 let onclickValue = "leaveGame()";
                                 createInputField(input, 'button', 'Leave', 'bold', onclickValue);
                     } else if(activeGamesList[i].player1 === authenticatedUserName

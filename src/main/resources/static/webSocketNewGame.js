@@ -2,29 +2,21 @@ var socket = null;
 var client = null;
 var currentURL = window.location.href;
 var gameId = currentURL.substring(currentURL.indexOf("newGame/") + 8)
-//var currentUserId;
-//var activeUsersList = null;
-//var activeGamesList = null;
-//var chatText = "";
-//var isPlayerJoinedGame = false;
-//var isPlayerCreatedGame = false;
-//document.getElementById("chatInput").value = "";
-//let authenticatedUserTag = document.getElementById("currentUsername");
-//let authenticatedUserName = authenticatedUserTag.innerHTML;
 
-window.onload = function load(){
+window.onload = () => {
     resetTimer();
     idleLogout();
     connect();
+    console.log("ready state: " + socket.readyState);
 }
-window.onbeforeunload = function unload(){
+window.onbeforeunload = () => {
     disconnect();
     window.location = '/logout';
 }
 
 function connect(){
 
-    socket = new SockJS("https://battleships-spring-boot.herokuapp.com/websocket");
+    socket = new SockJS("http://localhost:8080/websocket"); //https://battleships-spring-boot.herokuapp.com/websocket
 
     client = Stomp.over(socket);
 
@@ -55,6 +47,12 @@ function connect(){
             client.subscribe("/user/queue/placeShip", payload => {
                    payloadBody = JSON.parse(payload.body);
             });
+
+            client.subscribe("/user/queue/resetBoard", payload => {
+                               payloadBody = JSON.parse(payload.body);
+                               console.log("payload body " + payload.body);
+                               console.log("json parsed " + payloadBody)
+            });
         });
 
 }
@@ -79,10 +77,15 @@ function disconnect(){
 
 function placeShipTile(x, y){
     console.log("sending x: " + x + " y: " + y);
+    console.log("ready state: " + socket.readyState);
     client.send('/ws/shipPlacement', {}, JSON.stringify({
                         "fieldStatus": "SHIP_ALIVE",
                         "coords": "" + x + y
                         }));
+}
+
+function sendResetBoard(){
+    client.send('/ws/resetBoard', {}, JSON.stringify({"username":"username", "message": "resetBoard"}));
 }
 
 function sendPlacementInfoToOpponent(shipName, whichOfAKind, isAllShipsPlaced){

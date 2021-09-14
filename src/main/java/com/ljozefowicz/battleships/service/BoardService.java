@@ -10,5 +10,6 @@ public interface BoardService {
     Board initializeBoard();
     Board updateField(Board board, String coords, FieldStatus fieldStatus);
     List<List<Field>> getFieldsList(Board board);
+    Board resetBoard(Board board);
     Board getBoardById(Long id);
 }

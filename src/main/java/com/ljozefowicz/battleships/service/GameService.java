@@ -11,6 +11,7 @@ public interface GameService {
     Long findGameIdByPlayer1Username(String username);
     Game findGameByPlayer1Username(String username);
     Game findGameByPlayer2Username(String username);
+    Game findGameByUsername(String username);
     List<Game> getAvailableGames();
     Game joinGameById(Long id, String username);
     Game updateGameState(Game game);

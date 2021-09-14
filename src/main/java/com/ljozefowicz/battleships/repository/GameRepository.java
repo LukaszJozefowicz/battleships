@@ -8,4 +8,5 @@ import java.util.Optional;
 public interface GameRepository extends JpaRepository<Game, Long> {
     Optional<Game> findByPlayer1_id(Long id);
     Optional<Game> findByPlayer2_id(Long id);
+    Optional<Game> findByPlayer1_idOrPlayer2_id(Long id, Long id2);
 }

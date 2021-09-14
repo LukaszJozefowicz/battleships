@@ -10,13 +10,11 @@ import com.ljozefowicz.battleships.model.beans.ActiveUsersList;
 import com.ljozefowicz.battleships.model.beans.ActiveGamesList;
 import com.ljozefowicz.battleships.model.entity.Game;
 import com.ljozefowicz.battleships.service.GameService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -118,7 +116,7 @@ public class GameLobbyController {
         //if user joined and has a created game, delete it from the list
         Game possibleCreatedGame = gameService.findGameByPlayer1Username(principal.getName());
         if(possibleCreatedGame != null){
-            Long createdGameId = gameService.findGameIdByPlayer1Username(principal.getName());
+            //Long createdGameId = gameService.findGameIdByPlayer1Username(principal.getName());
             gameService.deleteGame(gameId);
             activeGamesList.getGamesList().remove(dtoMapper.mapToGameDto(possibleCreatedGame));
         }
@@ -133,12 +131,13 @@ public class GameLobbyController {
 
         Long gameId = gameService.findGameIdByPlayer1Username(principal.getName());
         Game createdGame = gameService.findGameByPlayer1Username(principal.getName());
-        System.out.println("game id: " + gameId);
+//        System.out.println("game id: " + gameId);
 
-        if(gameId != null && !createdGame.getGameState().equals(GameState.SHIPS_SETUP)) {
-//            System.out.println("deleting game " + createdGame);
-            System.out.println("deleting game to dto" + dtoMapper.mapToGameDto(createdGame));
-            gameService.deleteGame(gameId);
+        if(gameId != null) {
+            if(!createdGame.getGameState().equals(GameState.SHIPS_SETUP)) {
+                gameService.deleteGame(gameId);
+            }
+            System.out.println("removing game from list: " + dtoMapper.mapToGameDto(createdGame));
             activeGamesList.getGamesList().remove(dtoMapper.mapToGameDto(createdGame));
         }
 
@@ -164,15 +163,8 @@ public class GameLobbyController {
     }
 
 
-    /*@MessageMapping("/startGame/{gameId}")
-    @SendTo("/gameLobby")
-    public String startGame(Principal principal, @DestinationVariable Long gameId){
-
-        return new Gson().toJson(activeGamesList.getGamesList(), List.class);
-    }*/
-
     @MessageMapping("/newGame/redirect")
-    @SendToUser("/queue/notify")
+    //@SendToUser("/queue/notify")
     public void notifyUserNewGameStarted(@Payload String msg, Principal principal){
         GameDto gameToStart = new Gson().fromJson(msg, GameDto.class);
 
@@ -181,23 +173,23 @@ public class GameLobbyController {
         gameService.updateGameState(game);
 
         int index = activeGamesList.getGamesList().indexOf(gameToStart);
-        activeGamesList.getGamesList().get(index).setGameState(GameState.GAME_IN_PROGRESS.name());
+        activeGamesList.getGamesList().get(index).setGameState(GameState.SHIPS_SETUP.name());
 
-        System.out.println("game to start: " + gameToStart);
+        //System.out.println("game to start: " + gameToStart);
         messagingTemplate.convertAndSendToUser(gameToStart.getPlayer2(), "/queue/notify", msg);
         messagingTemplate.convertAndSendToUser(gameToStart.getPlayer1(), "/queue/notify", msg);
     }
 
     //------------ non-websocket controllers --------------
     @GetMapping("/")
-    public String getGameLobby(Model model, Principal principal){
+    public String getGameLobby(Principal principal){
         List<Game> games = gameService.getAvailableGames();
 
         activeUsersList.getUsersList().add(principal.getName());
-        List<String> loggedUsers = activeUsersList.getUsersList();
-        System.out.println("list of users");
-        System.out.println("length " + loggedUsers.size());
-        for(String u : loggedUsers) System.out.println(u + " ");
+        //List<String> loggedUsers = activeUsersList.getUsersList();
+        //System.out.println("list of users");
+        //System.out.println("length " + loggedUsers.size());
+        //for(String u : loggedUsers) System.out.println(u + " ");
 
         return "game-lobby";
     }

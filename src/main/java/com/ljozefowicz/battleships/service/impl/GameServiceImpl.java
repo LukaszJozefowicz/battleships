@@ -77,6 +77,12 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
+    public Game findGameByUsername(String username) {
+        User user = userRepository.findByUsername(username).orElse(null);
+        return gameRepository.findByPlayer1_idOrPlayer2_id(user.getId(), user.getId()).orElse(null);
+    }
+
+    @Override
     public List<Game> getAvailableGames(){
         return gameRepository.findAll();
     }

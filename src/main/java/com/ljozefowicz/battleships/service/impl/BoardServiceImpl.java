@@ -5,6 +5,7 @@ import com.ljozefowicz.battleships.enums.FieldStatus;
 import com.ljozefowicz.battleships.model.Field;
 import com.ljozefowicz.battleships.model.entity.AllowedShip;
 import com.ljozefowicz.battleships.model.entity.Board;
+import com.ljozefowicz.battleships.model.entity.Game;
 import com.ljozefowicz.battleships.model.entity.Ship;
 import com.ljozefowicz.battleships.repository.AllowedShipRepository;
 import com.ljozefowicz.battleships.repository.BoardRepository;
@@ -41,6 +42,14 @@ public class BoardServiceImpl implements BoardService{
                 .build();
         boardToSave.getShips().forEach(e -> e.setBoard(boardToSave));
         return boardRepository.save(boardToSave);
+    }
+
+    @Override
+    public Board resetBoard(Board board){
+        FieldStatus[][] fieldStatusArray = new FieldStatus[10][10];
+        Arrays.stream(fieldStatusArray).forEach(e -> Arrays.fill(e, FieldStatus.EMPTY));
+        board.setPersistedBoard(new Gson().toJson(fieldStatusArray));
+        return boardRepository.save(board);
     }
 
     @Override
@@ -109,7 +118,7 @@ public class BoardServiceImpl implements BoardService{
                 listOfShips.add(Ship.builder()
                         .type(allowedShip.getType())
                         .length(allowedShip.getLength())
-                        //.board(board)
+                        .isDestroyed(false)
                         .build());
             }
         }

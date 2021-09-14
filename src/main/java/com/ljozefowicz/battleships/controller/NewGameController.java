@@ -18,7 +18,6 @@ import lombok.AllArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -88,29 +87,33 @@ public class NewGameController {
     public void sendShipsPlacementInfoToOpponent(ShipPlacementInfoDto placementInfo, @DestinationVariable Long gameId, Principal principal){
 
         Game currentGame = gameService.findGameById(gameId);
-        String opponentUser;
-        if(principal.getName().equals(currentGame.getPlayer1().getUsername())){
-            opponentUser = currentGame.getPlayer2().getUsername();
-        } else {
-            opponentUser = currentGame.getPlayer1().getUsername();
-        }
+        String opponentUser = principal.getName().equals(currentGame.getPlayer1().getUsername()) ?
+            currentGame.getPlayer2().getUsername() : currentGame.getPlayer1().getUsername();
+
         messagingTemplate.convertAndSendToUser(opponentUser, "/queue/sendPlacementInfo/" + gameId, placementInfo);
     }
 
     @MessageMapping("/shipPlacement")
     public void placeShip(FieldDto field, Principal principal){
 
-        Game game = gameService.findGameByPlayer1Username(principal.getName());
-        if(game == null)
-            game = gameService.findGameByPlayer2Username(principal.getName());
+        Game currentGame = gameService.findGameByUsername(principal.getName());
 
-        Board board = game.getFirstPlayerBoard();
-        if(principal.getName().equals(game.getPlayer2().getUsername()))
-            board = game.getSecondPlayerBoard();
+        Board currentBoard = principal.getName().equals(currentGame.getPlayer1().getUsername()) ?
+                currentGame.getFirstPlayerBoard() : currentGame.getSecondPlayerBoard();
 
-
-        boardService.updateField(board, field.getCoords(), FieldStatus.valueOf(field.getFieldStatus())); //FieldStatus.SHIP_ALIVE
+        boardService.updateField(currentBoard, field.getCoords(), FieldStatus.valueOf(field.getFieldStatus())); //FieldStatus.SHIP_ALIVE
 
         messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/placeShip", field);
     }
+
+    @MessageMapping("/resetBoard")
+    public void resetBoard(Principal principal, MessageDto messageDto){
+        Game currentGame = gameService.findGameByUsername(principal.getName());
+        Board currentBoard = principal.getName().equals(currentGame.getPlayer1().getUsername()) ?
+                currentGame.getFirstPlayerBoard() : currentGame.getSecondPlayerBoard();
+
+        boardService.resetBoard(currentBoard);
+        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/resetBoard", messageDto);
+    }
+
 }

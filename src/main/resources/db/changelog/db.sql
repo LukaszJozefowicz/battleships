@@ -85,6 +85,7 @@ create table if not exists ships
     length int not null,
     fields varchar(100),
     board_id bigint,
+    is_destroyed boolean not null default false,
     CONSTRAINT ships_pk primary key (id),
     CONSTRAINT ships_fk FOREIGN KEY (board_id) REFERENCES boards(id)
 );
