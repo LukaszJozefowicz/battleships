@@ -1,5 +1,6 @@
 package com.ljozefowicz.battleships.service;
 
+import com.ljozefowicz.battleships.model.entity.Board;
 import com.ljozefowicz.battleships.model.entity.Game;
 
 import java.util.List;
@@ -16,4 +17,5 @@ public interface GameService {
     Game joinGameById(Long id, String username);
     Game updateGameState(Game game);
     Game findGameById(Long id);
+    Board getBoardByPlayerName(Game game, String username);
 }

@@ -5,31 +5,25 @@ import com.ljozefowicz.battleships.enums.FieldStatus;
 import com.ljozefowicz.battleships.model.Field;
 import com.ljozefowicz.battleships.model.entity.AllowedShip;
 import com.ljozefowicz.battleships.model.entity.Board;
-import com.ljozefowicz.battleships.model.entity.Game;
 import com.ljozefowicz.battleships.model.entity.Ship;
 import com.ljozefowicz.battleships.repository.AllowedShipRepository;
 import com.ljozefowicz.battleships.repository.BoardRepository;
 import com.ljozefowicz.battleships.repository.ShipRepository;
-import com.ljozefowicz.battleships.service.AllowedShipService;
 import com.ljozefowicz.battleships.service.BoardService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
 public class BoardServiceImpl implements BoardService{
 
-    private BoardRepository boardRepository;
-    private AllowedShipRepository allowedShipRepository;
-    private ShipRepository shipRepository;
+    private final BoardRepository boardRepository;
+    private final AllowedShipRepository allowedShipRepository;
+    private final ShipRepository shipRepository;
 
     @Override
     public Board initializeBoard() {
@@ -38,9 +32,9 @@ public class BoardServiceImpl implements BoardService{
         Board boardToSave = Board.builder()
                 //.id(id)
                 .persistedBoard(new Gson().toJson(fieldStatusArray))
-                .ships(initializeListOfShips())
+                //.ships(initializeListOfShips())
                 .build();
-        boardToSave.getShips().forEach(e -> e.setBoard(boardToSave));
+        //boardToSave.getShips().forEach(e -> e.setBoard(boardToSave));
         return boardRepository.save(boardToSave);
     }
 
@@ -58,14 +52,14 @@ public class BoardServiceImpl implements BoardService{
         List<List<Field>> cellsList = getFieldsList(board);
         final int col = (int)coords.charAt(0) - 48, //48 is digit 0 in ascii
                   row = (int)coords.charAt(1) - 48;
-        //System.out.println("col = " + col + " row = " + row);
+
         final Field updatedField = Field.builder()
                 .fieldStatus(fieldStatus)
                 .coords(coords)
                 .x(col)
                 .y(row)
                 .build();
-        //System.out.println("updated field = " + updatedField.toString());
+
         cellsList.get(row).set(col, updatedField);
         board.setPersistedBoard(new Gson().toJson(listOfFieldsToArray2D(cellsList)));
 
@@ -100,13 +94,11 @@ public class BoardServiceImpl implements BoardService{
 
     private FieldStatus[][] listOfFieldsToArray2D(List<List<Field>> list){
 
-        FieldStatus[][] fieldStatusArray = list.stream()
+        return list.stream()
                 .map(e -> e.stream()
                         .map(Field::getFieldStatus)
                         .toArray(FieldStatus[]::new))
                 .toArray(FieldStatus[][]::new);
-
-        return fieldStatusArray;
     }
 
     private List<Ship> initializeListOfShips(){
@@ -126,4 +118,73 @@ public class BoardServiceImpl implements BoardService{
 
     }
 
- }
+    @Override
+    public Board saveShipField(Board board, String type, int shipLength, String coords){
+        List<Ship> listOfShips = shipRepository.findAllByBoard_id(board.getId()).size() == 0
+                ? new ArrayList<>()
+                : shipRepository.findAllByBoard_id(board.getId());
+        String[] fields = listOfShips.size() > 0
+                ? new Gson().fromJson(listOfShips.get(listOfShips.size() - 1).getFields(), String[].class)
+                : new String[shipLength];
+
+        if(listOfShips.size() == 0 || isAllShipFieldsSet(fields)){
+
+            fields = new String[shipLength];
+            Arrays.fill(fields, "null");
+            fields[0] = coords;
+
+            listOfShips.add(Ship.builder()
+                    .type(type)
+                    .length(shipLength)
+                    .fields(new Gson().toJson(fields))
+                    .isDestroyed(false)
+                    .board(board)
+                    .build());
+        } else {
+            //Ship shipToUpdate = listOfShips.get(listOfShips.size() - 1);
+            //fields = new Gson().fromJson(shipToUpdate.getFields(), String[].class);
+
+            for(int i = 0; i < fields.length; i++){
+                if("null".equals(fields[i])) {
+                    fields[i] = coords;
+                    break;
+                }
+            }
+//            listOfShips.get(listOfShips.size() - 1).setFields(new Gson().toJson(fields));
+            //listOfShips.set(listOfShips.size() - 1, shipToUpdate);
+//            board.setShips(listOfShips);
+        }
+        listOfShips.get(listOfShips.size() - 1).setFields(new Gson().toJson(fields));
+        board.setShips(listOfShips);
+
+        return boardRepository.save(board);
+    }
+
+    private boolean isAllShipFieldsSet(String[] fields){
+        return !Arrays.asList(fields).contains("null");
+    }
+
+    /*public static void main(String[] args) {
+        String[] fields = new String[4];
+        Arrays.fill(fields, "null");
+        fields[0] = "97";
+//        fields = Arrays.stream(fields)
+//                .map(s -> s == null ? "null" : s)
+//                .toArray(String[]::new);
+
+        String ships = new Gson().toJson(fields);
+        System.out.println(ships);
+
+        String[] fieldsAfterConvert = new Gson().fromJson(ships, String[].class);
+        for(int i = 0; i < fieldsAfterConvert.length; i++){
+            System.out.println("ele: "+ fieldsAfterConvert[i] + " bool: " + fieldsAfterConvert[i].equals("null"));
+            if("null".equals(fieldsAfterConvert[i])) {
+                System.out.println("dupa");
+                fieldsAfterConvert[i] = "65";
+                break;
+            }
+        }
+
+        System.out.println(new Gson().toJson(fieldsAfterConvert));
+    }*/
+}

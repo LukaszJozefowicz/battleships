@@ -10,7 +10,8 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 public class ShipPlacementInfoDto {
-    private String shipName;
-    private String whichOfAKind;
-    private String isAllShipsPlaced;
+    private String fieldStatus;
+    private String type;
+    private int length;
+    private String coords;
 }

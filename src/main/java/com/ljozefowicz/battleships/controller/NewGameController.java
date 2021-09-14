@@ -1,13 +1,10 @@
 package com.ljozefowicz.battleships.controller;
 
 import com.google.gson.Gson;
-import com.ljozefowicz.battleships.dto.FieldDto;
-import com.ljozefowicz.battleships.dto.GameDto;
-import com.ljozefowicz.battleships.dto.MessageDto;
 import com.ljozefowicz.battleships.dto.ShipPlacementInfoDto;
+import com.ljozefowicz.battleships.dto.MessageDto;
+import com.ljozefowicz.battleships.dto.ShipPlacementInfoForOpponentDto;
 import com.ljozefowicz.battleships.enums.FieldStatus;
-import com.ljozefowicz.battleships.enums.GameState;
-import com.ljozefowicz.battleships.model.Field;
 import com.ljozefowicz.battleships.model.entity.Board;
 import com.ljozefowicz.battleships.model.entity.Game;
 import com.ljozefowicz.battleships.service.AllowedShipService;
@@ -53,57 +50,36 @@ public class NewGameController {
         model.addAttribute("shipsToPlace", new Gson().toJson(allowedShipService.getListOfShipsToPlace()));
         return "new-game";
     }
-/*
-    @GetMapping("/placeShips")
-    public ResponseEntity<Void> placeShips(@RequestParam String coords, Model model, Principal principal){
-
-        Game game = gameService.findGameByPlayer1Username(principal.getName());
-        if(game == null)
-            game = gameService.findGameByPlayer2Username(principal.getName());
-
-        Board board = game.getFirstPlayerBoard();
-        if(principal.getName().equals(game.getPlayer2().getUsername()))
-            board = game.getSecondPlayerBoard();
-
-
-        boardService.updateField(board, coords, FieldStatus.SHIP_ALIVE);
-        //model.addAttribute("board", boardService.getFieldsList(board));
-        //model.addAttribute("counter", new Counter(10));
-        //model.addAttribute("shipsToPlace", allowedShipService.getListOfShipsToPlace());
-
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
-    @GetMapping("/finishGame")
-    public ResponseEntity<Void> finishGame(Principal principal){
-        Long gameId = gameService.findGameIdByPlayer1Username(principal.getName());
-        gameService.deleteGame(gameId);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }*/
 
     //--------- webSocket controllers ------------
     @MessageMapping("/sendShipsPlacementInfo/{gameId}")
     //@SendToUser("/newGame/{gameId}")
-    public void sendShipsPlacementInfoToOpponent(ShipPlacementInfoDto placementInfo, @DestinationVariable Long gameId, Principal principal){
+    public void sendShipsPlacementInfoToOpponent(ShipPlacementInfoForOpponentDto placementInfo, @DestinationVariable Long gameId, Principal principal){
 
         Game currentGame = gameService.findGameById(gameId);
         String opponentUser = principal.getName().equals(currentGame.getPlayer1().getUsername()) ?
             currentGame.getPlayer2().getUsername() : currentGame.getPlayer1().getUsername();
 
+//        Board currentBoard = gameService.getBoardByPlayerName(currentGame, principal.getName());
+//        boardService.saveShipField(currentBoard, placementInfo.getShipName(), placementInfo.)
+
         messagingTemplate.convertAndSendToUser(opponentUser, "/queue/sendPlacementInfo/" + gameId, placementInfo);
     }
 
     @MessageMapping("/shipPlacement")
-    public void placeShip(FieldDto field, Principal principal){
+    public void placeShip(ShipPlacementInfoDto placementInfo, Principal principal){
 
         Game currentGame = gameService.findGameByUsername(principal.getName());
 
-        Board currentBoard = principal.getName().equals(currentGame.getPlayer1().getUsername()) ?
-                currentGame.getFirstPlayerBoard() : currentGame.getSecondPlayerBoard();
+        Board currentBoard = gameService.getBoardByPlayerName(currentGame, principal.getName());
+//        Board currentBoard = principal.getName().equals(currentGame.getPlayer1().getUsername()) ?
+//                currentGame.getFirstPlayerBoard() : currentGame.getSecondPlayerBoard();
 
-        boardService.updateField(currentBoard, field.getCoords(), FieldStatus.valueOf(field.getFieldStatus())); //FieldStatus.SHIP_ALIVE
+        boardService.updateField(currentBoard, placementInfo.getCoords(), FieldStatus.valueOf(placementInfo.getFieldStatus())); //FieldStatus.SHIP_ALIVE
 
-        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/placeShip", field);
+        boardService.saveShipField(currentBoard, placementInfo.getType(), placementInfo.getLength(), placementInfo.getCoords());
+
+        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/placeShip", placementInfo);
     }
 
     @MessageMapping("/resetBoard")

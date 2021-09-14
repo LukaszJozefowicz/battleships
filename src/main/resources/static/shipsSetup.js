@@ -54,7 +54,8 @@ function setShipPlacementInfo(){
         if(whichShip === shipsToPlace.length - 1){
             document.getElementById("shipPlacingInfo").className = "red";
             document.getElementById("shipPlacingInfo").innerHTML = "Your board is ready";
-            sendPlacementInfoToOpponent("all", "all", "true");
+            console.log("whichShip after board ready: " + whichShip + " type: " + shipsToPlace[whichShip].type)
+            sendPlacementInfoToOpponent(shipsToPlace[whichShip].type, shipsToPlace[whichShip].whichOfAKind, "true");
             whichFieldOfShip = 1;
             whichShip++;
         } else

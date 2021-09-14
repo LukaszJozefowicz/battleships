@@ -2,6 +2,7 @@ package com.ljozefowicz.battleships.service.impl;
 
 import com.ljozefowicz.battleships.enums.GameState;
 import com.ljozefowicz.battleships.enums.GameTurn;
+import com.ljozefowicz.battleships.model.entity.Board;
 import com.ljozefowicz.battleships.model.entity.Game;
 import com.ljozefowicz.battleships.model.entity.User;
 import com.ljozefowicz.battleships.repository.GameRepository;
@@ -100,6 +101,15 @@ public class GameServiceImpl implements GameService {
         gameToJoin.setSecondPlayerBoard(boardService.initializeBoard());
         gameToJoin.setGameState(GameState.READY_TO_START);
         return gameRepository.save(gameToJoin);
+    }
+
+    @Override
+    public Board getBoardByPlayerName(Game game, String username){
+        if(game.getPlayer1().getUsername().equals(username)){
+            return game.getFirstPlayerBoard();
+        }
+
+        return game.getSecondPlayerBoard();
     }
 
     private String getLoggedInUsername(){

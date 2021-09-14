@@ -76,10 +76,12 @@ function disconnect(){
 }
 
 function placeShipTile(x, y){
-    console.log("sending x: " + x + " y: " + y);
+    console.log("sending type: " + shipsToPlace[whichShip].type + " length: " + shipsToPlace[whichShip].length + " x: " + x + " y: " + y);
     console.log("ready state: " + socket.readyState);
     client.send('/ws/shipPlacement', {}, JSON.stringify({
                         "fieldStatus": "SHIP_ALIVE",
+                        "type": shipsToPlace[whichShip].type,
+                        "length" : shipsToPlace[whichShip].length,
                         "coords": "" + x + y
                         }));
 }

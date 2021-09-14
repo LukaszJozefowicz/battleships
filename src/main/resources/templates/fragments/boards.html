@@ -24,7 +24,7 @@
         <tr class = "gridRow" th:each="row, i : ${board}">
             <td class="bold counterCell" th:text="${counter.increment()}"></td>
 <!--            <td class="dataCell" th:each="field : ${board[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:method="get" th:id="|${field.getX()}${field.getY()}|" th:action="@{/setup/placeShips}" onclick="setShip(this)" th:onclick="|setShip(this); window.location.href='/placeShips?coords=${field.getX()}${field.getY()}'|"></td>-->
-            <td class="dataCell" th:each="field : ${board[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:id="|${field.getX()}${field.getY()}|" th:onclick="|setShip(this); placeShipTile(${field.getX()}, ${field.getY()})|"></td>
+            <td class="dataCell" th:each="field : ${board[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:id="|${field.getX()}${field.getY()}|" th:onclick="|placeShipTile(${field.getX()}, ${field.getY()}); setShip(this)|"></td>
         </tr>
         </tbody>
     </table>
