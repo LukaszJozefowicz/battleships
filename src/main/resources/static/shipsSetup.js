@@ -1,3 +1,5 @@
+var areYouReady = false;
+var isOpponentReady = false;
 var whichShip = 0;
 var whichFieldOfShip  = 1;
 //var shipsToPlace = JSON.parse([[${shipsToPlace}]]); --global var declared in new-game.html th:inline script
@@ -54,10 +56,12 @@ function setShipPlacementInfo(){
         if(whichShip === shipsToPlace.length - 1){
             document.getElementById("shipPlacingInfo").className = "red";
             document.getElementById("shipPlacingInfo").innerHTML = "Your board is ready";
-            console.log("whichShip after board ready: " + whichShip + " type: " + shipsToPlace[whichShip].type)
+
             sendPlacementInfoToOpponent(shipsToPlace[whichShip].type, shipsToPlace[whichShip].whichOfAKind, "true");
+            areYouReady = true;
             whichFieldOfShip = 1;
             whichShip++;
+
         } else
         if(whichFieldOfShip === currentShipLength + 1){
             whichFieldOfShip = 1;
@@ -101,6 +105,8 @@ function setShip(that){
         if(whichShip === shipsToPlace.length){
             disableAllFields();
             setUpForGameStart();
+            if(isOpponentReady)
+                startShootingPhase();
         }
 }
 

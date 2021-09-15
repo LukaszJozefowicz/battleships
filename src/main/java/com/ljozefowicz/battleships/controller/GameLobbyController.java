@@ -72,6 +72,7 @@ public class GameLobbyController {
     @SendTo("/gameLobby")
     public MessageDto sendChatMessage(MessageDto messageObj){
         return MessageDto.builder()
+                .messageType(messageObj.getMessageType())
                 .username(messageObj.getUsername())
                 .message(messageObj.getMessage())
                 .build();
@@ -165,7 +166,7 @@ public class GameLobbyController {
 
     @MessageMapping("/newGame/redirect")
     //@SendToUser("/queue/notify")
-    public void notifyUserNewGameStarted(@Payload String msg, Principal principal){
+    public void notifyUserNewGameStarted(String msg){
         GameDto gameToStart = new Gson().fromJson(msg, GameDto.class);
 
         Game game = gameService.findGameById(gameToStart.getId());
@@ -183,7 +184,7 @@ public class GameLobbyController {
     //------------ non-websocket controllers --------------
     @GetMapping("/")
     public String getGameLobby(Principal principal){
-        List<Game> games = gameService.getAvailableGames();
+        //List<Game> games = gameService.getAvailableGames();
 
         activeUsersList.getUsersList().add(principal.getName());
         //List<String> loggedUsers = activeUsersList.getUsersList();

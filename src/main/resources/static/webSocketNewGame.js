@@ -2,12 +2,19 @@ var socket = null;
 var client = null;
 var currentURL = window.location.href;
 var gameId = currentURL.substring(currentURL.indexOf("newGame/") + 8)
+var chatText = "";
+document.getElementById("chatInput").value = "";
+var textOutput = document.getElementById("chatOutput");
+let authenticatedUserTag = document.getElementById("currentUsername");
+let authenticatedUserName = authenticatedUserTag.innerHTML;
 
 window.onload = () => {
     resetTimer();
     idleLogout();
     connect();
-    console.log("ready state: " + socket.readyState);
+    document.getElementById("chatOutput").value = "";
+    document.getElementById("chatInput").focus();
+//    console.log("ready state: " + socket.readyState);
 }
 window.onbeforeunload = () => {
     disconnect();
@@ -26,7 +33,6 @@ function connect(){
             client.subscribe("/user/queue/sendPlacementInfo/" + gameId, payload => {
 
                 payloadBody = JSON.parse(payload.body);
-                console.log("INVOKED SUBSCRIBE PLACEMENT INFO!!!!!!!!!!!!!");
                 console.log("payload body " + payload.body);
                 console.log("json parsed " + payloadBody)
                 if(payloadBody.shipName !== undefined
@@ -39,35 +45,40 @@ function connect(){
                         } else
                         if(payloadBody.isAllShipsPlaced === "true"){
                             oppPlacementInfo.innerHTML = "Opponent has finished placing his ships.";
+                            if(areYouReady){
+                                startShootingPhase();
+                            }
+                            isOpponentReady = true;
                         }
                 }
 
             });
 
             client.subscribe("/user/queue/placeShip", payload => {
-                   payloadBody = JSON.parse(payload.body);
+//                   payloadBody = JSON.parse(payload.body);
             });
 
             client.subscribe("/user/queue/resetBoard", payload => {
-                               payloadBody = JSON.parse(payload.body);
-                               console.log("payload body " + payload.body);
-                               console.log("json parsed " + payloadBody)
+//                               payloadBody = JSON.parse(payload.body);
+//                               console.log("payload body " + payload.body);
+//                               console.log("json parsed " + payloadBody)
             });
+
+            client.subscribe("/sendInfoMessage/" + gameId, payload => {
+                     payloadBody = JSON.parse(payload.body);
+                     if(payloadBody.messageType === "gameChatMsg"){
+                        receiveChatMessage(payloadBody);
+                     } else if(payloadBody.messageType === "currentTurnInfo"){
+                        appendCurrentTurnInfo(payloadBody);
+                     }
+            });
+
         });
 
 }
 
 function disconnect(){
     if(client != null) {
-        /*isPlayerJoinedGame = false;
-        isPlayerCreatedGame = false;
-        let authenticatedUserTag = document.getElementById("currentUsername");
-        let authenticatedUserName = authenticatedUserTag.innerHTML;
-        activeUsersList = activeUsersList.filter(e => e !== authenticatedUserName);
-
-        client.send('/ws/userLeft', {}, JSON.stringify(activeUsersList));
-        client.send('/ws/sendToChat', {}, JSON.stringify({username: authenticatedUserName, message: " left the lobby\n"}));
-        //client.send('/ws/deleteGame', {}, JSON.stringify(activeGamesList));*/
 
         client.disconnect(payload => {
             client.disconnect();
@@ -87,14 +98,49 @@ function placeShipTile(x, y){
 }
 
 function sendResetBoard(){
-    client.send('/ws/resetBoard', {}, JSON.stringify({"username":"username", "message": "resetBoard"}));
+    client.send('/ws/resetBoard', {}, JSON.stringify({"messageType": "resetBoard", "username":"username", "message": "resetBoard"}));
 }
 
 function sendPlacementInfoToOpponent(shipName, whichOfAKind, isAllShipsPlaced){
-    console.log("send placement info, gameId: " + gameId + " shipName: " + shipName + " whichofakind: " + whichOfAKind + "isallplaced: " + isAllShipsPlaced);
+//    console.log("send placement info, gameId: " + gameId + " shipName: " + shipName + " whichofakind: " + whichOfAKind + "isallplaced: " + isAllShipsPlaced);
     client.send('/ws/sendShipsPlacementInfo/' + gameId, {}, JSON.stringify({
                             "shipName": shipName,
                             "whichOfAKind": whichOfAKind,
                             "isAllShipsPlaced": isAllShipsPlaced
                             }));
 }
+
+function receiveChatMessage(payloadBody){
+
+    textOutput.value += payloadBody.username + ":" + payloadBody.message + "\n";
+    textOutput.scrollTop = textOutput.scrollHeight;
+}
+
+function appendCurrentTurnInfo(payloadBody){
+    textOutput.value += payloadBody.message + payloadBody.username + "\n";
+    textOutput.scrollTop = textOutput.scrollHeight;
+}
+
+function sendCurrentTurnInfo(){
+
+    client.send('/ws/sendCurrentTurn/' + gameId, {}, JSON.stringify({ messageType: "currentTurnInfo",
+                                                            username: "username",
+                                                            message: "Current turn: "}));
+}
+
+$('#chatInput').on('keypress', function(e){
+    chatText = this.value;
+    console.log("in jquery");
+
+        if(event.which === 13 || event.keyCode === 13){
+
+            client.send('/ws/gameChat/' + gameId, {}, JSON.stringify({
+                                                    messageType: "gameChatMsg",
+                                                    username: authenticatedUserName,
+                                                    message: chatText}));
+            e.preventDefault();
+            this.value = "";
+            chatText = "";
+            return false;
+        }
+});

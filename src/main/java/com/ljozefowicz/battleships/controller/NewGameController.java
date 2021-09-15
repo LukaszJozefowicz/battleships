@@ -5,6 +5,7 @@ import com.ljozefowicz.battleships.dto.ShipPlacementInfoDto;
 import com.ljozefowicz.battleships.dto.MessageDto;
 import com.ljozefowicz.battleships.dto.ShipPlacementInfoForOpponentDto;
 import com.ljozefowicz.battleships.enums.FieldStatus;
+import com.ljozefowicz.battleships.enums.GameTurn;
 import com.ljozefowicz.battleships.model.entity.Board;
 import com.ljozefowicz.battleships.model.entity.Game;
 import com.ljozefowicz.battleships.service.AllowedShipService;
@@ -14,6 +15,7 @@ import com.ljozefowicz.battleships.util.Counter;
 import lombok.AllArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -48,6 +50,12 @@ public class NewGameController {
         model.addAttribute("counter", new Counter(0));
         model.addAttribute("counterOpponent", new Counter(0));
         model.addAttribute("shipsToPlace", new Gson().toJson(allowedShipService.getListOfShipsToPlace()));
+        model.addAttribute("startingPlayer", game.getPlayerTurn() == GameTurn.PLAYER1
+                                                ? game.getPlayer1().getUsername()
+                                                : game.getPlayer2().getUsername());
+        model.addAttribute("opponentName", principal.getName().equals(game.getPlayer1().getUsername())
+                ? game.getPlayer2().getUsername()
+                : game.getPlayer1().getUsername());
         return "new-game";
     }
 
@@ -60,9 +68,6 @@ public class NewGameController {
         String opponentUser = principal.getName().equals(currentGame.getPlayer1().getUsername()) ?
             currentGame.getPlayer2().getUsername() : currentGame.getPlayer1().getUsername();
 
-//        Board currentBoard = gameService.getBoardByPlayerName(currentGame, principal.getName());
-//        boardService.saveShipField(currentBoard, placementInfo.getShipName(), placementInfo.)
-
         messagingTemplate.convertAndSendToUser(opponentUser, "/queue/sendPlacementInfo/" + gameId, placementInfo);
     }
 
@@ -72,11 +77,9 @@ public class NewGameController {
         Game currentGame = gameService.findGameByUsername(principal.getName());
 
         Board currentBoard = gameService.getBoardByPlayerName(currentGame, principal.getName());
-//        Board currentBoard = principal.getName().equals(currentGame.getPlayer1().getUsername()) ?
-//                currentGame.getFirstPlayerBoard() : currentGame.getSecondPlayerBoard();
+
 
         boardService.updateField(currentBoard, placementInfo.getCoords(), FieldStatus.valueOf(placementInfo.getFieldStatus())); //FieldStatus.SHIP_ALIVE
-
         boardService.saveShipField(currentBoard, placementInfo.getType(), placementInfo.getLength(), placementInfo.getCoords());
 
         messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/placeShip", placementInfo);
@@ -90,6 +93,40 @@ public class NewGameController {
 
         boardService.resetBoard(currentBoard);
         messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/resetBoard", messageDto);
+    }
+
+    @MessageMapping("/gameChat/{gameId}")
+    @SendTo("/sendInfoMessage/{gameId}")
+    public MessageDto sendChatMessage(MessageDto messageObj){
+        return MessageDto.builder()
+                .messageType(messageObj.getMessageType())
+                .username(messageObj.getUsername())
+                .message(messageObj.getMessage())
+                .build();
+
+//        Game currentGame = gameService.findGameByUsername(principal.getName());
+
+//        messagingTemplate.convertAndSendToUser(currentGame.getPlayer1().getUsername(), "/queue/sendInfoMessage", msg);
+//        messagingTemplate.convertAndSendToUser(currentGame.getPlayer2().getUsername(), "/queue/sendInfoMessage", msg);
+    }
+
+    @MessageMapping("/sendCurrentTurn/{gameId}")
+    @SendTo("/sendInfoMessage/{gameId}")
+    public MessageDto sendCurrentTurnInfo(MessageDto messageObj, Principal principal){
+
+        Game currentGame = gameService.findGameByUsername(principal.getName());
+
+        return MessageDto.builder()
+                .messageType(messageObj.getMessageType())
+                .username(currentGame.getPlayerTurn() == GameTurn.PLAYER1
+                            ? currentGame.getPlayer1().getUsername()
+                            : currentGame.getPlayer2().getUsername())
+                .message(messageObj.getMessage())
+                .build();
+
+
+//        messagingTemplate.convertAndSendToUser(currentGame.getPlayer1().getUsername(), "/queue/sendInfoMessage", msg);
+//        messagingTemplate.convertAndSendToUser(currentGame.getPlayer2().getUsername(), "/queue/sendInfoMessage", msg);
     }
 
 }

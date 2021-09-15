@@ -1,9 +1,9 @@
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
 <div class="container board-container" th:fragment="boards" id="board1" th:object="${shipsToPlace}">
-<!--    style="visibility:hidden"-->
-<!--    <h2 id="shipPlacingInfo" th:with="shipIterator = 0" th:text="|Ships placing phase: place ${shipsToPlace[shipIterator].getType()} ${shipsToPlace[shipIterator].getWhichOfAKind()}|">Placing ships</h2>-->
+
     <div class="floatLeft">
         <br>
+        <h4>Your board: <span class="red" id="currentUsername" sec:authentication="principal.username">User</span></h4>
         <table id = "boardTable" th:object="${board}">
         <thead>
         <tr class = "gridRow">
@@ -23,7 +23,6 @@
         <tbody th:object="${counter}">
         <tr class = "gridRow" th:each="row, i : ${board}">
             <td class="bold counterCell" th:text="${counter.increment()}"></td>
-<!--            <td class="dataCell" th:each="field : ${board[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:method="get" th:id="|${field.getX()}${field.getY()}|" th:action="@{/setup/placeShips}" onclick="setShip(this)" th:onclick="|setShip(this); window.location.href='/placeShips?coords=${field.getX()}${field.getY()}'|"></td>-->
             <td class="dataCell" th:each="field : ${board[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:id="|${field.getX()}${field.getY()}|" th:onclick="|placeShipTile(${field.getX()}, ${field.getY()}); setShip(this)|"></td>
         </tr>
         </tbody>
@@ -36,6 +35,7 @@
 
     <div class="floatRight">
         <br>
+        <h4>Board of opponent: <span id="opponentUsername" class="red" th:object="${opponentName}" th:text="${opponentName}"></span></h4>
         <table id = "boardTableOpponent" th:object="${opponentBoard}">
         <thead>
         <tr class = "gridRow">
@@ -55,7 +55,6 @@
         <tbody th:object="${counterOpponent}">
         <tr class = "gridRow" th:each="row, i : ${opponentBoard}">
             <td class="bold counterCell" th:text="${counterOpponent.increment()}"></td>
-<!--            <td class="dataCell" th:each="field : ${opponentBoard[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:method="get" th:id="|${field.getX()}${field.getY()}|" th:action="@{/setup/placeShips}" onclick="setShip(this)" th:onclick="|setShip(this); window.location.href='/placeShips?coords=${field.getX()}${field.getY()}'|"></td>-->
             <td class="dataCell" th:each="field : ${opponentBoard[i.index]}"><input type="button" fieldstatus="empty" class="opp-btn" th:id="|${field.getX()}${field.getY()}|" th:onclick="|setShip(this); placeShipTile(${field.getX()}, ${field.getY()})|" disabled></td>
         </tr>
         </tbody>
@@ -63,10 +62,11 @@
     <h5 id="opponentShipPlacingInfo" class="red" th:object="${gameId}">Opponent is placing his ships</h5>
     </div>
 
-    <br/>
+    <br>
 
     <script th:inline="javascript">
         var shipsToPlace = JSON.parse([[${shipsToPlace}]]);
+        var startingPlayer = [[${startingPlayer}]];
     </script>
 </div>
 </html>

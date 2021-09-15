@@ -135,18 +135,25 @@ th.id-col {
   border-top: 10px solid transparent;
 }
 
-.floatLeft {
-    width: 50%; float: left;
-}
-
-.floatRight {
-    width: 50%; float: right;
-}
-
 .gameInProgressInfo {
     color: red;
     font-weight:bold;
     background-color: transparent;
     border:none;
     outline:none;
+}
+
+table.staticInfo {
+       border: none;
+       background-color: transparent;
+       border-collapse: separate;
+       border-spacing: 5px;
+}
+
+.infoColor {
+    max-width: 30px;
+    min-width: 30px;
+    max-height: 50px;
+    min-height: 50px;
+    border: 1px solid black;
 }

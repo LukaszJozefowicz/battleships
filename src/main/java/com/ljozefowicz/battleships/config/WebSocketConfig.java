@@ -13,7 +13,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         // Set prefix for the endpoint that the client listens for our messages from - @SendTo prefix
-        registry.enableSimpleBroker("/gameLobby", "/queue", "/newGame");
+        registry.enableSimpleBroker("/gameLobby", "/queue", "/newGame", "/sendInfoMessage");
         // Set prefix for endpoints the client will send messages to - @MessageMapping prefix
         registry.setApplicationDestinationPrefixes("/ws");
     }

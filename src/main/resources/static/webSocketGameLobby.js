@@ -46,7 +46,7 @@ function connect(){
                     usersTableBody.remove();
                     activeUsersList = payloadBody;
                     generateUsersTable();
-                } else if(payloadBody.username !== undefined && payloadBody.message !== undefined){
+                } else if(payloadBody.username !== undefined && payloadBody.message !== undefined && payloadBody.messageType == "lobbyChatMsg"){
                     receiveChatMessage(payloadBody);
                 } else if(Array.isArray(payloadBody) && payloadBody[0].id === 0 && payloadBody[0].gameState !== undefined){
                     let gamesTableBody = document.getElementById('gamesTableBody');
@@ -70,7 +70,7 @@ function connect(){
             });
 
             client.send('/ws/listOfUsers', {}, JSON.stringify(activeUsersList));
-            client.send('/ws/sendToChat', {}, JSON.stringify({username: authenticatedUserName, message: " joined the lobby\n"}));
+            client.send('/ws/sendToChat', {}, JSON.stringify({messageType: "lobbyChatMsg", username: authenticatedUserName, message: " joined the lobby\n"}));
             client.send('/ws/gamesList', {}, JSON.stringify(activeGamesList));
         });
 
@@ -85,7 +85,7 @@ function disconnect(){
         activeUsersList = activeUsersList.filter(e => e !== authenticatedUserName);
 
         client.send('/ws/userLeft', {}, JSON.stringify(activeUsersList));
-        client.send('/ws/sendToChat', {}, JSON.stringify({username: authenticatedUserName, message: " left the lobby\n"}));
+        client.send('/ws/sendToChat', {}, JSON.stringify({messageType: "lobbyChatMsg", username: authenticatedUserName, message: " left the lobby\n"}));
         client.send('/ws/deleteGame', {}, JSON.stringify(activeGamesList));
 
         client.disconnect(payload => {
@@ -119,7 +119,7 @@ $('#chatInput').on('keypress', function(e){
 
         if(event.which === 13 || event.keyCode === 13){
 
-            client.send('/ws/sendToChat', {}, JSON.stringify({username: authenticatedUserName, message: chatText}));
+            client.send('/ws/sendToChat', {}, JSON.stringify({messageType: "lobbyChatMsg", username: authenticatedUserName, message: chatText}));
             e.preventDefault();
             this.value = "";
             chatText = "";
@@ -222,7 +222,6 @@ function createNewGame(){
 }
 
 function joinGame(id){
-    console.log("join game method");
     isPlayerJoinedGame = true;
     let url = "/ws/joinGame/" + id;
     client.send(url, {}, JSON.stringify(
