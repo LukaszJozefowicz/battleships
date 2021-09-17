@@ -18,6 +18,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Random;
 
 @Service
 @AllArgsConstructor
@@ -39,7 +40,7 @@ public class GameServiceImpl implements GameService {
                 .firstPlayerBoard(boardService.initializeBoard())
                 .secondPlayerBoard(null)
                 .gameState(GameState.WAITING_FOR_PLAYERS)
-                .playerTurn(GameTurn.PLAYER1)
+                .playerTurn(new Random().nextBoolean() == true ? GameTurn.PLAYER1 : GameTurn.PLAYER2)
                 .build();
 
         return gameRepository.save(newGame);
@@ -112,7 +113,51 @@ public class GameServiceImpl implements GameService {
         return game.getSecondPlayerBoard();
     }
 
-    private String getLoggedInUsername(){
+    @Override
+    public String getActivePlayerUsername(Game game){
+        if(game.getPlayerTurn() == GameTurn.PLAYER1){
+            return game.getPlayer1().getUsername();
+        }
+
+        return game.getPlayer2().getUsername();
+    }
+
+    @Override
+    public String getInactivePlayerUsername(Game game){
+        if(game.getPlayerTurn() == GameTurn.PLAYER2){
+            return game.getPlayer1().getUsername();
+        }
+
+        return game.getPlayer2().getUsername();
+    }
+
+    @Override
+    public Board getActivePlayerBoard(Game game){
+        if(game.getPlayerTurn() == GameTurn.PLAYER1){
+            return game.getFirstPlayerBoard();
+        }
+
+        return game.getSecondPlayerBoard();
+    }
+
+    @Override
+    public Board getInactivePlayerBoard(Game game){
+        if(game.getPlayerTurn() == GameTurn.PLAYER2){
+            return game.getFirstPlayerBoard();
+        }
+
+        return game.getSecondPlayerBoard();
+    }
+
+    @Override
+    public Game switchTurns(Game game){
+
+        game.setPlayerTurn(game.getPlayerTurn() == GameTurn.PLAYER1 ? GameTurn.PLAYER2 : GameTurn.PLAYER1);
+
+        return gameRepository.save(game);
+    }
+
+    /*private String getLoggedInUsername(){
 //        org.springframework.security.core.userdetails.User user =
 //                (org.springframework.security.core.userdetails.User)SecurityContextHolder
 //                        .getContext()
@@ -121,5 +166,5 @@ public class GameServiceImpl implements GameService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentPrincipalName = authentication.getName();
         return currentPrincipalName;//user.getUsername();
-    }
+    }*/
 }

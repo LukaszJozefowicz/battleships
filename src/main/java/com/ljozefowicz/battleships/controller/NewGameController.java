@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.ljozefowicz.battleships.dto.ShipPlacementInfoDto;
 import com.ljozefowicz.battleships.dto.MessageDto;
 import com.ljozefowicz.battleships.dto.ShipPlacementInfoForOpponentDto;
+import com.ljozefowicz.battleships.dto.ShotInfoDto;
 import com.ljozefowicz.battleships.enums.FieldStatus;
 import com.ljozefowicz.battleships.enums.GameTurn;
 import com.ljozefowicz.battleships.model.entity.Board;
@@ -112,10 +113,15 @@ public class NewGameController {
 
     @MessageMapping("/sendCurrentTurn/{gameId}")
     @SendTo("/sendInfoMessage/{gameId}")
-    public MessageDto sendCurrentTurnInfo(MessageDto messageObj, Principal principal){
+    public MessageDto sendCurrentTurnInfo(MessageDto messageObj, Principal principal, @DestinationVariable Long gameId){
 
-        Game currentGame = gameService.findGameByUsername(principal.getName());
+        Game currentGame = gameService.findGameById(gameId);
 
+//        System.out.println("whose turn before switch: " + currentGame.getPlayerTurn().name());
+//        gameService.switchTurns(currentGame);
+//        System.out.println("whose turn after switch: " + currentGame.getPlayerTurn().name());
+
+        //System.out.println("whose turn in sendCurrentTurnInfo: " + currentGame.getPlayerTurn().name());
         return MessageDto.builder()
                 .messageType(messageObj.getMessageType())
                 .username(currentGame.getPlayerTurn() == GameTurn.PLAYER1
@@ -127,6 +133,43 @@ public class NewGameController {
 
 //        messagingTemplate.convertAndSendToUser(currentGame.getPlayer1().getUsername(), "/queue/sendInfoMessage", msg);
 //        messagingTemplate.convertAndSendToUser(currentGame.getPlayer2().getUsername(), "/queue/sendInfoMessage", msg);
+    }
+
+    @MessageMapping("/shoot/{gameId}")
+    @SendTo("/newGame/{gameId}/shoot")
+    public ShotInfoDto shoot(ShotInfoDto shotInfo, @DestinationVariable Long gameId){
+
+        Game currentGame = gameService.findGameById(gameId);
+
+//        Board currentBoard = gameService.getBoardByPlayerName(currentGame, principal.getName());
+//        Board activePlayerBoard = gameService.getActivePlayerBoard(currentGame);
+        String currentPlayer = gameService.getActivePlayerUsername(currentGame);
+        String opponentPlayer = gameService.getInactivePlayerUsername(currentGame);
+        Board opponentPlayerBoard = gameService.getInactivePlayerBoard(currentGame);
+        String shotResult = boardService.getShotResult(opponentPlayerBoard, shotInfo.getCoords());
+
+        boardService.updateField(opponentPlayerBoard, shotInfo.getCoords(), FieldStatus.valueOf(shotResult));
+//        boardService.saveShipField(currentBoard, placementInfo.getType(), placementInfo.getLength(), placementInfo.getCoords());
+
+        //System.out.println("shotInfo before switch turns: " + shotInfo);
+
+//        System.out.println("whose turn before switch: " + currentGame.getPlayerTurn().name());
+        gameService.switchTurns(currentGame);
+//        System.out.println("whose turn after switch: " + currentGame.getPlayerTurn().name());
+
+        System.out.println("sent shotInfo at end of shoot controller\n" + ShotInfoDto.builder()
+                .currentPlayer(currentPlayer)
+                .opponentPlayer(opponentPlayer)
+                .shotResult(shotResult)
+                .coords(shotInfo.getCoords())
+                .build());
+
+        return ShotInfoDto.builder()
+                .currentPlayer(currentPlayer)
+                .opponentPlayer(opponentPlayer)
+                .shotResult(shotResult)
+                .coords(shotInfo.getCoords())
+                .build();
     }
 
 }

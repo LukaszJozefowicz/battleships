@@ -4,5 +4,6 @@ public enum FieldStatus {
     EMPTY,
     SHIP_ALIVE,
     SHIP_HIT,
+    SHIP_SUNK,
     MISS
 }

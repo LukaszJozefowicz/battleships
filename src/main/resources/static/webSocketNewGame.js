@@ -66,11 +66,39 @@ function connect(){
 
             client.subscribe("/sendInfoMessage/" + gameId, payload => {
                      payloadBody = JSON.parse(payload.body);
+                     console.log("INFO MESSAGE payload body " + payload.body);
+                     console.log("json parsed " + payloadBody)
                      if(payloadBody.messageType === "gameChatMsg"){
                         receiveChatMessage(payloadBody);
                      } else if(payloadBody.messageType === "currentTurnInfo"){
                         appendCurrentTurnInfo(payloadBody);
                      }
+            });
+
+            client.subscribe("/newGame/" + gameId + "/shoot", payload => {
+                    payloadBody = JSON.parse(payload.body);
+                    console.log("SHOOT payload body " + payload.body);
+                    console.log("json parsed " + payloadBody)
+                    shoot(payloadBody);
+
+                    let row = parseInt(String.fromCharCode(parseInt(payloadBody.coords.substring(0,1)) + 48)) + 1;  // 1-10
+                    let col = String.fromCharCode(parseInt(payloadBody.coords.substring(1,2)) + 65);                // A-J
+                    let shotResultInfo = payloadBody.currentPlayer + " shot: " + col + row + "\n";
+                    console.log("row: " + row + " col: " + col);
+
+                    switch(payloadBody.shotResult){
+                            case "SHIP_HIT":
+                                shotResultInfo += payloadBody.opponentPlayer + "'s ship hit!";
+                                break;
+                            case "SHIP_SUNK":
+                                shotResultInfo += payloadBody.opponentPlayer + "'s ship hit and sunk!";
+                                break;
+                            case "MISS":
+                                shotResultInfo += payloadBody.currentPlayer + " missed!";
+                                break;
+                        }
+                    appendCurrentTurnInfo({username: payloadBody.opponentPlayer,        //th:inline in boards.html
+                                           message: shotResultInfo + "\n\nCurrent turn: "});
             });
 
         });
@@ -86,9 +114,7 @@ function disconnect(){
     }
 }
 
-function placeShipTile(x, y){
-    console.log("sending type: " + shipsToPlace[whichShip].type + " length: " + shipsToPlace[whichShip].length + " x: " + x + " y: " + y);
-    console.log("ready state: " + socket.readyState);
+function sendPlaceShipTile(x, y){
     client.send('/ws/shipPlacement', {}, JSON.stringify({
                         "fieldStatus": "SHIP_ALIVE",
                         "type": shipsToPlace[whichShip].type,
@@ -98,11 +124,12 @@ function placeShipTile(x, y){
 }
 
 function sendResetBoard(){
+
     client.send('/ws/resetBoard', {}, JSON.stringify({"messageType": "resetBoard", "username":"username", "message": "resetBoard"}));
 }
 
 function sendPlacementInfoToOpponent(shipName, whichOfAKind, isAllShipsPlaced){
-//    console.log("send placement info, gameId: " + gameId + " shipName: " + shipName + " whichofakind: " + whichOfAKind + "isallplaced: " + isAllShipsPlaced);
+
     client.send('/ws/sendShipsPlacementInfo/' + gameId, {}, JSON.stringify({
                             "shipName": shipName,
                             "whichOfAKind": whichOfAKind,
@@ -144,3 +171,13 @@ $('#chatInput').on('keypress', function(e){
             return false;
         }
 });
+
+function sendShotInfo(x, y){
+    client.send('/ws/shoot/' + gameId, {}, JSON.stringify({
+
+                        currentPlayer: "currentPlayer",
+                        opponentPlayer: "opponentPlayer",
+                        shotResult: "shotResult",
+                        coords: "" + x + y
+                        }));
+}

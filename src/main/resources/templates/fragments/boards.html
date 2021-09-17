@@ -23,11 +23,12 @@
         <tbody th:object="${counter}">
         <tr class = "gridRow" th:each="row, i : ${board}">
             <td class="bold counterCell" th:text="${counter.increment()}"></td>
-            <td class="dataCell" th:each="field : ${board[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:id="|${field.getX()}${field.getY()}|" th:onclick="|placeShipTile(${field.getX()}, ${field.getY()}); setShip(this)|"></td>
+            <td class="dataCell" th:each="field : ${board[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:id="|${field.getX()}${field.getY()}|" th:onclick="|sendPlaceShipTile(${field.getX()}, ${field.getY()}); setShip(this)|"></td>
         </tr>
         </tbody>
     </table>
         <button type="button" id="reset" onclick="resetBoard()">Reset board</button>
+        <button type="button" id="randomPlacement" onclick="setAllShipsRandomly()">Randomize</button>
         <h5 id="shipPlacingInfo">Ship Placement phase.
             <br>Place ships by clicking.
             <br>Longest ships first.</h5>
@@ -55,7 +56,7 @@
         <tbody th:object="${counterOpponent}">
         <tr class = "gridRow" th:each="row, i : ${opponentBoard}">
             <td class="bold counterCell" th:text="${counterOpponent.increment()}"></td>
-            <td class="dataCell" th:each="field : ${opponentBoard[i.index]}"><input type="button" fieldstatus="empty" class="opp-btn" th:id="|${field.getX()}${field.getY()}|" th:onclick="|setShip(this); placeShipTile(${field.getX()}, ${field.getY()})|" disabled></td>
+            <td class="dataCell" th:each="field : ${opponentBoard[i.index]}"><input type="button" fieldstatus="empty" class="opp-btn" th:id="|opp${field.getX()}${field.getY()}|" th:onclick="|sendShotInfo(${field.getX()}, ${field.getY()});|" disabled></td>
         </tr>
         </tbody>
     </table>

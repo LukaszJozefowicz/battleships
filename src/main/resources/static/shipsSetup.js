@@ -229,3 +229,30 @@ function isNeighborDownLeft(cell, button){
         && parseInt(button.id.substring(0,1)) + 1 <= 9
         && parseInt(button.id.substring(1,2)) - 1 >= 0
 }
+
+function setAllShipsRandomly(){
+    if(areYouReady){
+        resetBoard();
+    }
+    while(whichShip !== shipsToPlace.length){
+        var cells = document.querySelectorAll("#boardTable .my-btn");
+        var activeCells = [];
+
+        cells.forEach(function(cell){
+            if(cell.disabled === false){
+                activeCells.push(cell);
+            }
+        });
+
+        if(activeCells.length === 0){
+            resetBoard();
+            continue;
+        }
+
+        var randomCell = activeCells[Math.floor(Math.random() * activeCells.length)];
+        let col = parseInt(randomCell.id.substring(0,1));
+        let row = parseInt(randomCell.id.substring(1,2));
+        sendPlaceShipTile(col, row);
+        setShip(randomCell);
+    }
+}

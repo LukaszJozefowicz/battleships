@@ -12,5 +12,6 @@ public interface BoardService {
     List<List<Field>> getFieldsList(Board board);
     Board resetBoard(Board board);
     Board saveShipField(Board board, String type, int shipLength, String coords);
+    String getShotResult(Board board, String coords);
     Board getBoardById(Long id);
 }

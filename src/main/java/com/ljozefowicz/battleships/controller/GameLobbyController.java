@@ -57,13 +57,13 @@ public class GameLobbyController {
     @MessageMapping("/userLeft")
     @SendTo("/gameLobby")
     public String sendUsersListAfterUserLeft(String jsonList){
-        System.out.println("user left json list string: " + jsonList);
+//        System.out.println("user left json list string: " + jsonList);
         Type listType = new TypeToken<ArrayList<String>>(){}.getType();
         List<String> listFromJson = new Gson().fromJson(jsonList, listType);
 
-        for (String s : listFromJson){
-            System.out.println(s + " ");
-        }
+//        for (String s : listFromJson){
+//            System.out.println(s + " ");
+//        }
         activeUsersList.setUsersList(listFromJson);
         return jsonList;
     }
@@ -82,8 +82,8 @@ public class GameLobbyController {
     @SendTo("/gameLobby")
     public String sendGamesList(){
 
-        System.out.println("available games");
-        for(GameDto g : activeGamesList.getGamesList()) System.out.println(g + "\n");
+//        System.out.println("available games");
+//        for(GameDto g : activeGamesList.getGamesList()) System.out.println(g + "\n");
 
         return new Gson().toJson(activeGamesList.getGamesList(), List.class);
     }
@@ -138,7 +138,7 @@ public class GameLobbyController {
             if(!createdGame.getGameState().equals(GameState.SHIPS_SETUP)) {
                 gameService.deleteGame(gameId);
             }
-            System.out.println("removing game from list: " + dtoMapper.mapToGameDto(createdGame));
+//            System.out.println("removing game from list: " + dtoMapper.mapToGameDto(createdGame));
             activeGamesList.getGamesList().remove(dtoMapper.mapToGameDto(createdGame));
         }
 

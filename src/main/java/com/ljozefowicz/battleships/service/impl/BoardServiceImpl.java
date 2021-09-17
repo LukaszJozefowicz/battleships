@@ -50,14 +50,14 @@ public class BoardServiceImpl implements BoardService{
     public Board updateField(Board board, String coords, FieldStatus fieldStatus) {
 
         List<List<Field>> cellsList = getFieldsList(board);
-        final int col = (int)coords.charAt(0) - 48, //48 is digit 0 in ascii
-                  row = (int)coords.charAt(1) - 48;
+        final int row = (int)coords.charAt(0) - 48, //48 is digit 0 in ascii
+                  col = (int)coords.charAt(1) - 48;
 
         final Field updatedField = Field.builder()
                 .fieldStatus(fieldStatus)
                 .coords(coords)
-                .x(col)
-                .y(row)
+                .x(row)
+                .y(col)
                 .build();
 
         cellsList.get(row).set(col, updatedField);
@@ -65,6 +65,23 @@ public class BoardServiceImpl implements BoardService{
 
 
         return boardRepository.save(board);
+    }
+
+    @Override
+    public String getShotResult(Board board, String coords) {
+
+        FieldStatus[][] statusArray = new Gson().fromJson(board.getPersistedBoard(), FieldStatus[][].class);
+        final int row = (int)coords.charAt(0) - 48, //48 is digit 0 in ascii
+                  col = (int)coords.charAt(1) - 48;
+
+        switch(statusArray[row][col]){
+            case SHIP_ALIVE:
+                return FieldStatus.SHIP_HIT.name();
+            case EMPTY:
+                return FieldStatus.MISS.name();
+        }
+
+        return "";
     }
 
     @Override

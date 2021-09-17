@@ -18,4 +18,9 @@ public interface GameService {
     Game updateGameState(Game game);
     Game findGameById(Long id);
     Board getBoardByPlayerName(Game game, String username);
+    Board getActivePlayerBoard(Game game);
+    Board getInactivePlayerBoard(Game game);
+    String getActivePlayerUsername(Game game);
+    String getInactivePlayerUsername(Game game);
+    Game switchTurns(Game game);
 }
