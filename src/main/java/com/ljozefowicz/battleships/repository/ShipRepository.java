@@ -9,4 +9,6 @@ import java.util.Optional;
 public interface ShipRepository extends JpaRepository<Ship, Long> {
 
     List<Ship> findAllByBoard_id(Long id);
+    void deleteAllByBoard_id(Long id);
+    Ship findByBoard_idAndFieldsLike(Long id, String field);
 }

@@ -13,9 +13,11 @@ import com.ljozefowicz.battleships.service.BoardService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -39,14 +41,17 @@ public class BoardServiceImpl implements BoardService{
     }
 
     @Override
+    @Transactional
     public Board resetBoard(Board board){
         FieldStatus[][] fieldStatusArray = new FieldStatus[10][10];
         Arrays.stream(fieldStatusArray).forEach(e -> Arrays.fill(e, FieldStatus.EMPTY));
         board.setPersistedBoard(new Gson().toJson(fieldStatusArray));
+        shipRepository.deleteAllByBoard_id(board.getId());
         return boardRepository.save(board);
     }
 
     @Override
+    @Transactional
     public Board updateField(Board board, String coords, FieldStatus fieldStatus) {
 
         List<List<Field>> cellsList = getFieldsList(board);
@@ -71,17 +76,19 @@ public class BoardServiceImpl implements BoardService{
     public String getShotResult(Board board, String coords) {
 
         FieldStatus[][] statusArray = new Gson().fromJson(board.getPersistedBoard(), FieldStatus[][].class);
-        final int row = (int)coords.charAt(0) - 48, //48 is digit 0 in ascii
-                  col = (int)coords.charAt(1) - 48;
 
-        switch(statusArray[row][col]){
+        //System.out.println("statusArray field: " + statusArray[getRow(coords)][getCol(coords)]);
+
+
+        switch (statusArray[getRow(coords)][getCol(coords)]) {
             case SHIP_ALIVE:
                 return FieldStatus.SHIP_HIT.name();
             case EMPTY:
                 return FieldStatus.MISS.name();
-        }
+            default:
+                return "";
 
-        return "";
+        }
     }
 
     @Override
@@ -136,7 +143,8 @@ public class BoardServiceImpl implements BoardService{
     }
 
     @Override
-    public Board saveShipField(Board board, String type, int shipLength, String coords){
+    @Transactional
+    public Board addShipField(Board board, String type, int shipLength, String coords){
         List<Ship> listOfShips = shipRepository.findAllByBoard_id(board.getId()).size() == 0
                 ? new ArrayList<>()
                 : shipRepository.findAllByBoard_id(board.getId());
@@ -158,8 +166,6 @@ public class BoardServiceImpl implements BoardService{
                     .board(board)
                     .build());
         } else {
-            //Ship shipToUpdate = listOfShips.get(listOfShips.size() - 1);
-            //fields = new Gson().fromJson(shipToUpdate.getFields(), String[].class);
 
             for(int i = 0; i < fields.length; i++){
                 if("null".equals(fields[i])) {
@@ -167,41 +173,131 @@ public class BoardServiceImpl implements BoardService{
                     break;
                 }
             }
-//            listOfShips.get(listOfShips.size() - 1).setFields(new Gson().toJson(fields));
-            //listOfShips.set(listOfShips.size() - 1, shipToUpdate);
-//            board.setShips(listOfShips);
         }
+
         listOfShips.get(listOfShips.size() - 1).setFields(new Gson().toJson(fields));
         board.setShips(listOfShips);
 
         return boardRepository.save(board);
     }
 
+    @Override
+    @Transactional
+    public boolean checkIfShipIsSunk(Board board, String coords){
+
+        Ship ship = shipRepository.findByBoard_idAndFieldsLike(board.getId(), "%" + coords + "%");
+        System.out.println("found ship: " + Ship.builder()
+                                            .id(ship.getId())
+                                            .board(null)
+                                            .type(ship.getType())
+                                            .length(ship.getLength())
+                                            .fields(ship.getFields())
+                                            .isDestroyed(ship.getIsDestroyed())
+                                            .build());
+        System.out.println("coords: " + coords);
+        FieldStatus[][] fieldStatusArray = new Gson().fromJson(board.getPersistedBoard(), FieldStatus[][].class);
+        String[] fields = new Gson().fromJson(ship.getFields(), String[].class);
+
+        String[] fieldsShipNotHit = Arrays.stream(fields)
+                .filter(field -> fieldStatusArray[getRow(field)][getCol(field)] != FieldStatus.SHIP_HIT)
+                .toArray(String[]::new);
+
+        if(fieldsShipNotHit.length == 0){
+            ship.setIsDestroyed(true);
+            shipRepository.save(ship);
+
+            System.out.println("ship after save: " + Ship.builder()
+                    .id(ship.getId())
+                    .board(null)
+                    .type(ship.getType())
+                    .length(ship.getLength())
+                    .fields(ship.getFields())
+                    .isDestroyed(ship.getIsDestroyed())
+                    .build());
+
+            for (int i = 0; i < fieldStatusArray.length; i++) {
+                for (int j = 0; j < fieldStatusArray[i].length; j++) {
+                    for (int k = 0; k < fields.length; k++) {
+                        if(i == getRow(fields[k]) && j == getCol(fields[k])){
+                            fieldStatusArray[i][j] = FieldStatus.SHIP_SUNK;
+                        }
+                    }
+                }
+            }
+
+            board.setPersistedBoard(new Gson().toJson(fieldStatusArray));
+            boardRepository.save(board);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean checkIfAllShipsAreSunk(Long boardId){
+
+        List<Ship> shipsAlive = shipRepository.findAllByBoard_id(boardId)
+                .stream()
+                .filter(s -> !s.getIsDestroyed())
+                .collect(Collectors.toList());
+        return shipsAlive.size() > 0 ? false : true;
+    }
+
+    @Override
+    public String getFieldsOfShipByCoords(Board board, String coords){
+        Ship ship = shipRepository.findByBoard_idAndFieldsLike(board.getId(), "%" + coords + "%");
+        //return new Gson().fromJson(ship.getFields(), String[].class);
+        return ship.getFields();
+    }
+
+    @Override
+    public String getShipFieldsToReveal(Long boardId){
+//        FieldStatus[][] statusArray = new Gson().fromJson(board.getPersistedBoard(), FieldStatus[][].class);
+//        String[] fieldsToReveal = Arrays.stream(statusArray)
+//                .flatMap(arr -> Arrays.stream(arr))
+//                .toArray(String[]::new);
+        List<Ship> ships = shipRepository.findAllByBoard_id(boardId);
+        String[] fieldsToReveal = ships.stream()
+                .filter(s -> !s.getIsDestroyed())
+                .flatMap(ship -> Arrays.stream(new Gson().fromJson(ship.getFields(), String[].class)))
+                .toArray(String[]::new);
+
+        return new Gson().toJson(fieldsToReveal);
+    }
+
     private boolean isAllShipFieldsSet(String[] fields){
         return !Arrays.asList(fields).contains("null");
     }
 
+    private int getRow(String coords){
+        return (int)coords.charAt(0) - 48;
+    }
+
+    private int getCol(String coords){
+        return (int)coords.charAt(1) - 48;
+    }
+
     /*public static void main(String[] args) {
-        String[] fields = new String[4];
-        Arrays.fill(fields, "null");
-        fields[0] = "97";
-//        fields = Arrays.stream(fields)
-//                .map(s -> s == null ? "null" : s)
-//                .toArray(String[]::new);
 
-        String ships = new Gson().toJson(fields);
-        System.out.println(ships);
-
-        String[] fieldsAfterConvert = new Gson().fromJson(ships, String[].class);
-        for(int i = 0; i < fieldsAfterConvert.length; i++){
-            System.out.println("ele: "+ fieldsAfterConvert[i] + " bool: " + fieldsAfterConvert[i].equals("null"));
-            if("null".equals(fieldsAfterConvert[i])) {
-                System.out.println("dupa");
-                fieldsAfterConvert[i] = "65";
-                break;
-            }
+                List<Ship> ships = List.of( Ship.builder()
+                                            .fields("[\"00\",\"10\",\"20\",\"30\"]")
+                                            .isDestroyed(false)
+                                            .build(),
+                                            Ship.builder()
+                                            .fields("[\"03\",\"13\",\"23\",\"33\"]")
+                                            .isDestroyed(false)
+                                            .build(),
+                                            Ship.builder()
+                                            .fields("[\"03\",\"13\",\"23\",\"33\"]")
+                                            .isDestroyed(true)
+                                            .build());
+        String[] fieldsToReveal =ships.stream()
+                        .filter(s -> !s.getIsDestroyed())
+                        //.flatMap(ship -> Arrays.stream(Arrays.stream(new Gson().fromJson(ship.getFields(), String[].class)).toArray()))
+                        .flatMap(ship -> Arrays.stream(new Gson().fromJson(ship.getFields(), String[].class)))
+                        .toArray(String[]::new);
+        System.out.println("length: " + fieldsToReveal.length);
+        for(String s : fieldsToReveal){
+            System.out.println(s + " ");
         }
-
-        System.out.println(new Gson().toJson(fieldsAfterConvert));
     }*/
 }

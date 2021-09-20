@@ -135,7 +135,7 @@ public class GameLobbyController {
 //        System.out.println("game id: " + gameId);
 
         if(gameId != null) {
-            if(!createdGame.getGameState().equals(GameState.SHIPS_SETUP)) {
+            if(!createdGame.getGameState().equals(GameState.IN_GAME)) {
                 gameService.deleteGame(gameId);
             }
 //            System.out.println("removing game from list: " + dtoMapper.mapToGameDto(createdGame));
@@ -144,7 +144,7 @@ public class GameLobbyController {
 
         //remove player from game that he joined and it didn't start yet
         Game possibleGameJoined = gameService.findGameByPlayer2Username(principal.getName());
-        if(possibleGameJoined != null && !possibleGameJoined.getGameState().equals(GameState.SHIPS_SETUP)){
+        if(possibleGameJoined != null && !possibleGameJoined.getGameState().equals(GameState.IN_GAME)){
             possibleGameJoined.setPlayer2(null);
             possibleGameJoined.setGameState(GameState.WAITING_FOR_PLAYERS);
             gameService.updateGameState(possibleGameJoined);
@@ -170,11 +170,11 @@ public class GameLobbyController {
         GameDto gameToStart = new Gson().fromJson(msg, GameDto.class);
 
         Game game = gameService.findGameById(gameToStart.getId());
-        game.setGameState(GameState.SHIPS_SETUP);
+        game.setGameState(GameState.IN_GAME);
         gameService.updateGameState(game);
 
         int index = activeGamesList.getGamesList().indexOf(gameToStart);
-        activeGamesList.getGamesList().get(index).setGameState(GameState.SHIPS_SETUP.name());
+        activeGamesList.getGamesList().get(index).setGameState(GameState.IN_GAME.name());
 
         //System.out.println("game to start: " + gameToStart);
         messagingTemplate.convertAndSendToUser(gameToStart.getPlayer2(), "/queue/notify", msg);

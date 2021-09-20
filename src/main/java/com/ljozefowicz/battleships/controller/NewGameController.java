@@ -51,6 +51,9 @@ public class NewGameController {
         model.addAttribute("counter", new Counter(0));
         model.addAttribute("counterOpponent", new Counter(0));
         model.addAttribute("shipsToPlace", new Gson().toJson(allowedShipService.getListOfShipsToPlace()));
+
+        System.out.println("shipsToPlace: " + new Gson().toJson(allowedShipService.getListOfShipsToPlace()));
+
         model.addAttribute("startingPlayer", game.getPlayerTurn() == GameTurn.PLAYER1
                                                 ? game.getPlayer1().getUsername()
                                                 : game.getPlayer2().getUsername());
@@ -81,7 +84,7 @@ public class NewGameController {
 
 
         boardService.updateField(currentBoard, placementInfo.getCoords(), FieldStatus.valueOf(placementInfo.getFieldStatus())); //FieldStatus.SHIP_ALIVE
-        boardService.saveShipField(currentBoard, placementInfo.getType(), placementInfo.getLength(), placementInfo.getCoords());
+        boardService.addShipField(currentBoard, placementInfo.getType(), placementInfo.getLength(), placementInfo.getCoords());
 
         messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/placeShip", placementInfo);
     }
@@ -104,24 +107,14 @@ public class NewGameController {
                 .username(messageObj.getUsername())
                 .message(messageObj.getMessage())
                 .build();
-
-//        Game currentGame = gameService.findGameByUsername(principal.getName());
-
-//        messagingTemplate.convertAndSendToUser(currentGame.getPlayer1().getUsername(), "/queue/sendInfoMessage", msg);
-//        messagingTemplate.convertAndSendToUser(currentGame.getPlayer2().getUsername(), "/queue/sendInfoMessage", msg);
     }
 
     @MessageMapping("/sendCurrentTurn/{gameId}")
     @SendTo("/sendInfoMessage/{gameId}")
-    public MessageDto sendCurrentTurnInfo(MessageDto messageObj, Principal principal, @DestinationVariable Long gameId){
+    public MessageDto sendCurrentTurnInfo(MessageDto messageObj, @DestinationVariable Long gameId){
 
         Game currentGame = gameService.findGameById(gameId);
 
-//        System.out.println("whose turn before switch: " + currentGame.getPlayerTurn().name());
-//        gameService.switchTurns(currentGame);
-//        System.out.println("whose turn after switch: " + currentGame.getPlayerTurn().name());
-
-        //System.out.println("whose turn in sendCurrentTurnInfo: " + currentGame.getPlayerTurn().name());
         return MessageDto.builder()
                 .messageType(messageObj.getMessageType())
                 .username(currentGame.getPlayerTurn() == GameTurn.PLAYER1
@@ -129,10 +122,6 @@ public class NewGameController {
                             : currentGame.getPlayer2().getUsername())
                 .message(messageObj.getMessage())
                 .build();
-
-
-//        messagingTemplate.convertAndSendToUser(currentGame.getPlayer1().getUsername(), "/queue/sendInfoMessage", msg);
-//        messagingTemplate.convertAndSendToUser(currentGame.getPlayer2().getUsername(), "/queue/sendInfoMessage", msg);
     }
 
     @MessageMapping("/shoot/{gameId}")
@@ -141,35 +130,48 @@ public class NewGameController {
 
         Game currentGame = gameService.findGameById(gameId);
 
-//        Board currentBoard = gameService.getBoardByPlayerName(currentGame, principal.getName());
-//        Board activePlayerBoard = gameService.getActivePlayerBoard(currentGame);
         String currentPlayer = gameService.getActivePlayerUsername(currentGame);
         String opponentPlayer = gameService.getInactivePlayerUsername(currentGame);
+        Board currentPlayerBoard = gameService.getActivePlayerBoard(currentGame);
         Board opponentPlayerBoard = gameService.getInactivePlayerBoard(currentGame);
+
         String shotResult = boardService.getShotResult(opponentPlayerBoard, shotInfo.getCoords());
+        String sunkShipCoords = "";
+        String shipFieldsToReveal = "";
+        boolean isAllShipsSunk = false;
 
         boardService.updateField(opponentPlayerBoard, shotInfo.getCoords(), FieldStatus.valueOf(shotResult));
-//        boardService.saveShipField(currentBoard, placementInfo.getType(), placementInfo.getLength(), placementInfo.getCoords());
 
-        //System.out.println("shotInfo before switch turns: " + shotInfo);
+        if(shotResult == FieldStatus.SHIP_HIT.name() && boardService.checkIfShipIsSunk(opponentPlayerBoard, shotInfo.getCoords())){
+            shotResult = FieldStatus.SHIP_SUNK.name();
+            sunkShipCoords = boardService.getFieldsOfShipByCoords(opponentPlayerBoard, shotInfo.getCoords());
+            isAllShipsSunk = boardService.checkIfAllShipsAreSunk(opponentPlayerBoard.getId());
+            if(isAllShipsSunk) {
+                shipFieldsToReveal = boardService.getShipFieldsToReveal(currentPlayerBoard.getId());
+                gameService.deleteGame(gameId);
+            }
+        }
+        if(!isAllShipsSunk)
+            gameService.switchTurns(currentGame);
 
-//        System.out.println("whose turn before switch: " + currentGame.getPlayerTurn().name());
-        gameService.switchTurns(currentGame);
-//        System.out.println("whose turn after switch: " + currentGame.getPlayerTurn().name());
-
-        System.out.println("sent shotInfo at end of shoot controller\n" + ShotInfoDto.builder()
-                .currentPlayer(currentPlayer)
-                .opponentPlayer(opponentPlayer)
-                .shotResult(shotResult)
-                .coords(shotInfo.getCoords())
-                .build());
+//        System.out.println("sent shotInfo at end of shoot controller\n" + ShotInfoDto.builder()
+//                .currentPlayer(currentPlayer)
+//                .opponentPlayer(opponentPlayer)
+//                .shotResult(shotResult)
+//                .coords(shotInfo.getCoords())
+//                .sunkShipCoords(sunkShipCoords)
+//                .isAllShipsSunk(isAllShipsSunk)
+//                .shipFieldsToReveal(shipFieldsToReveal)
+//                .build());
 
         return ShotInfoDto.builder()
                 .currentPlayer(currentPlayer)
                 .opponentPlayer(opponentPlayer)
                 .shotResult(shotResult)
                 .coords(shotInfo.getCoords())
+                .sunkShipCoords(sunkShipCoords)
+                .isAllShipsSunk(isAllShipsSunk)
+                .shipFieldsToReveal(shipFieldsToReveal)
                 .build();
     }
-
 }

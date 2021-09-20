@@ -13,5 +13,8 @@ public class ShotInfoDto {
     private String currentPlayer;
     private String opponentPlayer;
     private String shotResult;
+    private String sunkShipCoords;
+    private boolean isAllShipsSunk;
+    private String shipFieldsToReveal;
     private String coords;
 }

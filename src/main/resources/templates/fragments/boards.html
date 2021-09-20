@@ -56,7 +56,7 @@
         <tbody th:object="${counterOpponent}">
         <tr class = "gridRow" th:each="row, i : ${opponentBoard}">
             <td class="bold counterCell" th:text="${counterOpponent.increment()}"></td>
-            <td class="dataCell" th:each="field : ${opponentBoard[i.index]}"><input type="button" fieldstatus="empty" class="opp-btn" th:id="|opp${field.getX()}${field.getY()}|" th:onclick="|sendShotInfo(${field.getX()}, ${field.getY()});|" disabled></td>
+            <td class="dataCell" th:each="field : ${opponentBoard[i.index]}"><input type="button" fieldstatus="empty" class="opp-btn" th:id="|${field.getX()}${field.getY()}opp|" th:onclick="|sendShotInfo(${field.getX()}, ${field.getY()});|" disabled></td>
         </tr>
         </tbody>
     </table>
@@ -68,6 +68,10 @@
     <script th:inline="javascript">
         var shipsToPlace = JSON.parse([[${shipsToPlace}]]);
         var startingPlayer = [[${startingPlayer}]];
+        var areYouReady = false;
+        var isOpponentReady = false;
+        var whichShip = 0;
+        var whichFieldOfShip  = 1;
     </script>
 </div>
 </html>

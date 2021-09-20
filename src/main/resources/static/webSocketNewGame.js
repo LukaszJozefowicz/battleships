@@ -33,7 +33,7 @@ function connect(){
             client.subscribe("/user/queue/sendPlacementInfo/" + gameId, payload => {
 
                 payloadBody = JSON.parse(payload.body);
-                console.log("payload body " + payload.body);
+                console.log("payload body sendPlacementInfo" + payload.body);
                 console.log("json parsed " + payloadBody)
                 if(payloadBody.shipName !== undefined
                     && payloadBody.whichOfAKind !== undefined
@@ -55,13 +55,9 @@ function connect(){
             });
 
             client.subscribe("/user/queue/placeShip", payload => {
-//                   payloadBody = JSON.parse(payload.body);
             });
 
             client.subscribe("/user/queue/resetBoard", payload => {
-//                               payloadBody = JSON.parse(payload.body);
-//                               console.log("payload body " + payload.body);
-//                               console.log("json parsed " + payloadBody)
             });
 
             client.subscribe("/sendInfoMessage/" + gameId, payload => {
@@ -88,20 +84,28 @@ function connect(){
 
                     switch(payloadBody.shotResult){
                             case "SHIP_HIT":
-                                shotResultInfo += payloadBody.opponentPlayer + "'s ship hit!";
+                                shotResultInfo += payloadBody.opponentPlayer + "'s ship is hit!";
                                 break;
                             case "SHIP_SUNK":
-                                shotResultInfo += payloadBody.opponentPlayer + "'s ship hit and sunk!";
+                                shotResultInfo += payloadBody.opponentPlayer + "'s ship is hit and sunk!";
                                 break;
                             case "MISS":
                                 shotResultInfo += payloadBody.currentPlayer + " missed!";
                                 break;
-                        }
-                    appendCurrentTurnInfo({username: payloadBody.opponentPlayer,        //th:inline in boards.html
-                                           message: shotResultInfo + "\n\nCurrent turn: "});
+                    }
+                    if(payloadBody.allShipsSunk === false){
+                        appendCurrentTurnInfo({username: payloadBody.opponentPlayer,        //th:inline in boards.html
+                        message: shotResultInfo + "\n\nCurrent turn: "});
+                    } else if(payloadBody.allShipsSunk === true){
+                        textOutput.value += "All " + payloadBody.opponentPlayer + "'s ships are sunk\n"
+                                       + payloadBody.currentPlayer + " won!!";
+                        textOutput.scrollTop = textOutput.scrollHeight;
+                    }
             });
 
         });
+
+
 
 }
 
@@ -115,6 +119,14 @@ function disconnect(){
 }
 
 function sendPlaceShipTile(x, y){
+    console.log("sendPlaceShipTile" +
+    JSON.stringify({
+                            "fieldStatus": "SHIP_ALIVE",
+                            "type": shipsToPlace[whichShip].type,
+                            "length" : shipsToPlace[whichShip].length,
+                            "coords": "" + x + y
+                            }));
+
     client.send('/ws/shipPlacement', {}, JSON.stringify({
                         "fieldStatus": "SHIP_ALIVE",
                         "type": shipsToPlace[whichShip].type,
@@ -171,6 +183,16 @@ $('#chatInput').on('keypress', function(e){
             return false;
         }
 });
+
+function sendShotInfo(x, y){
+    client.send('/ws/shoot/' + gameId, {}, JSON.stringify({
+
+                        currentPlayer: "currentPlayer",
+                        opponentPlayer: "opponentPlayer",
+                        shotResult: "shotResult",
+                        coords: "" + x + y
+                        }));
+}
 
 function sendShotInfo(x, y){
     client.send('/ws/shoot/' + gameId, {}, JSON.stringify({

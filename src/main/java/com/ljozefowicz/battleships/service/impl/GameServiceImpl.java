@@ -17,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Random;
 
@@ -31,6 +32,7 @@ public class GameServiceImpl implements GameService {
     private LoggedInService loggedInService;
 
     @Override
+    @Transactional
     public Game createNewGame(String username) {
 
         User currentUser = userService.findByUsername(username);
@@ -47,6 +49,7 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
+    @Transactional
     public Game updateGameState(Game game) {
         return gameRepository.save(game);
     }
@@ -95,6 +98,7 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
+    @Transactional
     public Game joinGameById(Long id, String username){
         Game gameToJoin = gameRepository.findById(id).orElse(null);
         User currentUser = userRepository.findByUsername(username).orElse(null);
@@ -150,6 +154,7 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
+    @Transactional
     public Game switchTurns(Game game){
 
         game.setPlayerTurn(game.getPlayerTurn() == GameTurn.PLAYER1 ? GameTurn.PLAYER2 : GameTurn.PLAYER1);

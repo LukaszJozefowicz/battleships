@@ -1,8 +1,9 @@
-var areYouReady = false;
-var isOpponentReady = false;
-var whichShip = 0;
-var whichFieldOfShip  = 1;
-//var shipsToPlace = JSON.parse([[${shipsToPlace}]]); --global var declared in new-game.html th:inline script
+//var areYouReady = false;
+//var isOpponentReady = false;
+//var whichShip = 0;
+//var whichFieldOfShip  = 1;
+
+//var shipsToPlace = JSON.parse([[${shipsToPlace}]]); --global var declared in boards.html th:inline script
 
 function resetBoard(){
     whichShip = 0;
@@ -93,7 +94,6 @@ function setShip(that){
         setShipPlacementInfo();
         that.style.backgroundColor = "#0000cd"; //ship placed color
         that.disabled=true;
-        that.style.cursor = "not-allowed";
         that.setAttribute('fieldstatus', 'shipPlaced');
 
         highlightNeighbors();
@@ -143,7 +143,6 @@ function disableFieldsAroundPlacedShip(){
             if(isNeighbor(cell, that) || isNeighborDiagonally(cell, that)){
                 cell.style.backgroundColor = "#B0B0B0";  //grey - disabled around ship
                 cell.disabled=true;
-                cell.style.cursor = "not-allowed";
                 cell.setAttribute('fieldstatus', 'aroundShip');
             }
             else if(cell.getAttribute('fieldstatus') === "empty"){
@@ -169,7 +168,12 @@ function setUpForGameStart(){
             cell.setAttribute('fieldstatus', 'empty');
             cell.style.backgroundColor = "#add8e6"
         }
-    })
+    });
+
+    let resetButton = document.getElementById("reset");
+    let randomizeButton = document.getElementById("randomPlacement");
+    resetButton.remove();
+    randomizeButton.remove();
 }
 
 function isNeighbor(cell, button){
@@ -231,28 +235,28 @@ function isNeighborDownLeft(cell, button){
 }
 
 function setAllShipsRandomly(){
-    if(areYouReady){
-        resetBoard();
-    }
-    while(whichShip !== shipsToPlace.length){
-        var cells = document.querySelectorAll("#boardTable .my-btn");
-        var activeCells = [];
+//    console.log("counterForAutoPlaceShips: " + counterForAutoPlaceShips);
+//    console.log("whichShip: " + whichShip);
+            var cells = document.querySelectorAll("#boardTable .my-btn");
+            var activeCells = [];
 
-        cells.forEach(function(cell){
-            if(cell.disabled === false){
-                activeCells.push(cell);
+            cells.forEach(function(cell){
+                if(cell.disabled === false){
+                    activeCells.push(cell);
+                }
+            });
+
+            if(activeCells.length === 0){
+                resetBoard();
+                setAllShipsRandomly();
             }
-        });
 
-        if(activeCells.length === 0){
-            resetBoard();
-            continue;
-        }
-
-        var randomCell = activeCells[Math.floor(Math.random() * activeCells.length)];
-        let col = parseInt(randomCell.id.substring(0,1));
-        let row = parseInt(randomCell.id.substring(1,2));
-        sendPlaceShipTile(col, row);
-        setShip(randomCell);
-    }
+            var randomCell = activeCells[Math.floor(Math.random() * activeCells.length)];
+            let col = parseInt(randomCell.id.substring(0,1));
+            let row = parseInt(randomCell.id.substring(1,2));
+            sendPlaceShipTile(col, row);
+            setShip(randomCell);
+            if(whichShip < shipsToPlace.length){
+                setTimeout(setAllShipsRandomly, 500);
+            }
 }
