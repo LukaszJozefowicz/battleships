@@ -1,4 +1,4 @@
-package com.ljozefowicz.battleships.model;
+package com.ljozefowicz.battleships.util;
 
 import com.ljozefowicz.battleships.enums.FieldStatus;
 import lombok.AllArgsConstructor;

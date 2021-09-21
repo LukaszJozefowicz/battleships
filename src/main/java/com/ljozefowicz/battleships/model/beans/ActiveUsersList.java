@@ -12,6 +12,6 @@ public class ActiveUsersList {
 
     public ActiveUsersList(){
         usersList = new ArrayList<>();
-        usersList.add("usersList");
+        usersList.add("usersList");     //a little trick so I can check in javascript what kind of objects are passed
     }
 }

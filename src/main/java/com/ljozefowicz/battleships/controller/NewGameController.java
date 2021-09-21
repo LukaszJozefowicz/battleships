@@ -52,7 +52,7 @@ public class NewGameController {
         model.addAttribute("counterOpponent", new Counter(0));
         model.addAttribute("shipsToPlace", new Gson().toJson(allowedShipService.getListOfShipsToPlace()));
 
-        System.out.println("shipsToPlace: " + new Gson().toJson(allowedShipService.getListOfShipsToPlace()));
+//        System.out.println("shipsToPlace: " + new Gson().toJson(allowedShipService.getListOfShipsToPlace()));
 
         model.addAttribute("startingPlayer", game.getPlayerTurn() == GameTurn.PLAYER1
                                                 ? game.getPlayer1().getUsername()

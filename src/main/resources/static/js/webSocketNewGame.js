@@ -14,6 +14,7 @@ window.onload = () => {
     connect();
     document.getElementById("chatOutput").value = "";
     document.getElementById("chatInput").focus();
+    document.getElementById("backToMenu").style.display = "none";
 //    console.log("ready state: " + socket.readyState);
 }
 window.onbeforeunload = () => {
@@ -98,7 +99,7 @@ function connect(){
                         message: shotResultInfo + "\n\nCurrent turn: "});
                     } else if(payloadBody.allShipsSunk === true){
                         textOutput.value += "All " + payloadBody.opponentPlayer + "'s ships are sunk\n"
-                                       + payloadBody.currentPlayer + " won!!";
+                                       + payloadBody.currentPlayer + " won!!\n";
                         textOutput.scrollTop = textOutput.scrollHeight;
                     }
             });
@@ -183,16 +184,6 @@ $('#chatInput').on('keypress', function(e){
             return false;
         }
 });
-
-function sendShotInfo(x, y){
-    client.send('/ws/shoot/' + gameId, {}, JSON.stringify({
-
-                        currentPlayer: "currentPlayer",
-                        opponentPlayer: "opponentPlayer",
-                        shotResult: "shotResult",
-                        coords: "" + x + y
-                        }));
-}
 
 function sendShotInfo(x, y){
     client.send('/ws/shoot/' + gameId, {}, JSON.stringify({

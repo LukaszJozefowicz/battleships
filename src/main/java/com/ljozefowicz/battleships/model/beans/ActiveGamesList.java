@@ -13,7 +13,7 @@ public class ActiveGamesList {
 
     public ActiveGamesList(){
         gamesList = new ArrayList<>();
-        gamesList.add(GameDto.builder()
+        gamesList.add(GameDto.builder()     //a little trick so I can check in javascript what kind of objects are passed
                 .id(0L)
                 .player1("string")
                 .player2("string")

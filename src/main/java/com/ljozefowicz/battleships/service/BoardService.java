@@ -1,9 +1,8 @@
 package com.ljozefowicz.battleships.service;
 
 import com.ljozefowicz.battleships.enums.FieldStatus;
-import com.ljozefowicz.battleships.model.Field;
+import com.ljozefowicz.battleships.util.Field;
 import com.ljozefowicz.battleships.model.entity.Board;
-import com.ljozefowicz.battleships.model.entity.Ship;
 
 import java.util.List;
 

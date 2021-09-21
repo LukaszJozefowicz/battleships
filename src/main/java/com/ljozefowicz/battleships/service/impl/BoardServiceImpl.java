@@ -2,7 +2,7 @@ package com.ljozefowicz.battleships.service.impl;
 
 import com.google.gson.Gson;
 import com.ljozefowicz.battleships.enums.FieldStatus;
-import com.ljozefowicz.battleships.model.Field;
+import com.ljozefowicz.battleships.util.Field;
 import com.ljozefowicz.battleships.model.entity.AllowedShip;
 import com.ljozefowicz.battleships.model.entity.Board;
 import com.ljozefowicz.battleships.model.entity.Ship;
@@ -245,7 +245,6 @@ public class BoardServiceImpl implements BoardService{
     @Override
     public String getFieldsOfShipByCoords(Board board, String coords){
         Ship ship = shipRepository.findByBoard_idAndFieldsLike(board.getId(), "%" + coords + "%");
-        //return new Gson().fromJson(ship.getFields(), String[].class);
         return ship.getFields();
     }
 

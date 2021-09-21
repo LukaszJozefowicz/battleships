@@ -16,12 +16,7 @@ import javax.persistence.*;
 @AllArgsConstructor
 public class Role {
 
-//    public Role(UserRole name) {
-//        this.name = name;
-//    }
-
     @Id
-    //@GeneratedValue(generator = "roles_sequence")
     private Long id;
 
     @Enumerated(EnumType.STRING)

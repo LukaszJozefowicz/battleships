@@ -2,7 +2,7 @@
 
 html, body {
     height:100%;
-    background-image: url("battleship-background.jpg");
+    background-image: url("../pictures/battleship-background.jpg");
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;

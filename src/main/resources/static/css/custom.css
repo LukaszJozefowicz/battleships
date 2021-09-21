@@ -1,0 +1,101 @@
+.new-game-info{
+    font-weight: bold;
+}
+
+.block-normal{
+    display:flex;
+    justify-content:space-between;
+}
+
+.block-in{
+    display: inline-block;
+    float: left;
+}
+
+.block-right{
+    display: inline-block;
+    float: right;
+    margin-right: 0;
+    padding-right: 0;
+}
+
+tr.chat-area, td.chat-area{
+    padding: 0px 0px 0px 0px;
+}
+
+form {
+     margin:0px;
+     padding:0px;
+     display:inline;
+}
+
+textarea {
+    width: 100%;
+    height: 100%;
+}
+
+.red {
+    color: red;
+}
+
+.centered {
+    text-align: center;
+}
+
+.floatLeft {
+    width: 50%; float: left;
+}
+
+.floatRight {
+    width: 50%; float: right;
+}
+
+.duringGameStaticInfo {
+    width: 25%;
+    float: left;
+    visibility: hidden;
+}
+
+.staticInfoRight {
+    width: 25%; float: right;
+}
+
+h1 {
+            padding: 100px 0 0 0;
+            text-align: center;
+            color: white;
+            font-size: 8em;
+            font-family: Arial, Helvetica, sans-serif;
+            text-shadow: 0 1px 0 #ccc, 0 2px 0 #ccc,
+                            0 3px 0 #ccc, 0 4px 0 #ccc,
+                            0 5px 0 #ccc, 0 6px 0 #ccc,
+                            0 7px 0 #ccc, 0 8px 0 #ccc,
+                            0 9px 0 #ccc, 0 10px 0 #ccc,
+                            0 11px 0 #ccc, 0 12px 0 #ccc,
+                            0 20px 30px rgba(0, 0, 0, 0.5);
+}
+
+.btn-group {
+    margin: auto;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    padding: 150px 0 0 0;
+}
+
+.menu-btn {
+    margin-left: 10px;
+    margin-right: 10px;
+    font-size: 3em;
+    font-weight: bold;
+}
+
+.footer {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  text-align: right;
+  color: white;
+  font-weight: bold;
+}

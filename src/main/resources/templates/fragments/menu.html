@@ -8,16 +8,18 @@
                     class="icon-bar"></span> <span class="icon-bar"></span> <span
                     class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#" th:href="@{/}">Back to main menu</a>
+<!--            <a class="navbar-brand" href="#" th:href="@{/}">Back to main menu</a>-->
+            <a class="navbar-brand" style="pointer-events: none;cursor: default;"> Logged in as <span id="currentUsername" sec:authentication="principal.username">User</span></a>
         </div>
         <div id="navbar" class="collapse navbar-collapse">
             <ul class="nav navbar-nav">
-                <li></li><li></li><li></li><li></li><li></li>
 <!--                <li><a th:href="@{/gameLobby}">Game lobby</a></li>-->
 <!--                <li><a th:href="@{/newGame}">New game</a></li>-->
 <!--                <li><a th:href="@{/availableGames}">Join game</a></li>-->
 <!--                <li><a th:href="@{/placeShips}">Place ships</a></li>-->
 <!--                <li><a th:href="@{/finishGame}">Finish game</a></li>-->
+<!--                <li><a style="pointer-events: none;cursor: default;"> Welcome <span id="currentUsername" sec:authentication="principal.username">User</span></a></li>-->
+                <li><a id="backToMenu" th:href="@{/}">Back to main menu</a></li>
                 <li sec:authorize="isAuthenticated()"><a th:href="@{/logout}">Logout</a></li>
                 <li><a href="#" style="pointer-events: none;cursor: default;text-color: red">Auto logout in <i class="glyphicon glyphicon-time"></i><span id="countdown"></span></a></li>
             </ul>

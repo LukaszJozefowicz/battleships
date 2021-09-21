@@ -12,11 +12,9 @@ import com.ljozefowicz.battleships.model.entity.Game;
 import com.ljozefowicz.battleships.service.GameService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.lang.reflect.Type;
@@ -46,6 +44,27 @@ public class GameLobbyController {
         this.activeGamesList.getGamesList().addAll(games);
         this.messagingTemplate = messagingTemplate;
     }
+
+
+    @GetMapping("/gameLobby")
+    public String getGameLobby(Principal principal){
+        //List<Game> games = gameService.getAvailableGames();
+
+        activeUsersList.getUsersList().add(principal.getName());
+        //List<String> loggedUsers = activeUsersList.getUsersList();
+        //System.out.println("list of users");
+        //System.out.println("length " + loggedUsers.size());
+        //for(String u : loggedUsers) System.out.println(u + " ");
+
+        return "game-lobby";
+    }
+
+    @GetMapping("/")
+    public String getMainPage(){
+        return "main-menu";
+    }
+
+    //------------ webSocket controllers --------------
 
     @MessageMapping("/listOfUsers")
     @SendTo("/gameLobby")
@@ -114,15 +133,15 @@ public class GameLobbyController {
         activeGamesList.getGamesList().get(index).setPlayer2(principal.getName());
         activeGamesList.getGamesList().get(index).setGameState(GameState.READY_TO_START.name());
 
+        /*
         //if user joined and has a created game, delete it from the list
         Game possibleCreatedGame = gameService.findGameByPlayer1Username(principal.getName());
         if(possibleCreatedGame != null){
             //Long createdGameId = gameService.findGameIdByPlayer1Username(principal.getName());
             gameService.deleteGame(gameId);
             activeGamesList.getGamesList().remove(dtoMapper.mapToGameDto(possibleCreatedGame));
-        }
+        }*/
 
-        //for(GameDto g : activeGamesList.getGamesList()) System.out.println("listAfterJoin: "+g);
         return new Gson().toJson(activeGamesList.getGamesList(), List.class);
     }
 
@@ -179,19 +198,5 @@ public class GameLobbyController {
         //System.out.println("game to start: " + gameToStart);
         messagingTemplate.convertAndSendToUser(gameToStart.getPlayer2(), "/queue/notify", msg);
         messagingTemplate.convertAndSendToUser(gameToStart.getPlayer1(), "/queue/notify", msg);
-    }
-
-    //------------ non-websocket controllers --------------
-    @GetMapping("/")
-    public String getGameLobby(Principal principal){
-        //List<Game> games = gameService.getAvailableGames();
-
-        activeUsersList.getUsersList().add(principal.getName());
-        //List<String> loggedUsers = activeUsersList.getUsersList();
-        //System.out.println("list of users");
-        //System.out.println("length " + loggedUsers.size());
-        //for(String u : loggedUsers) System.out.println(u + " ");
-
-        return "game-lobby";
     }
 }

@@ -54,7 +54,7 @@ function setShipPlacementInfo(){
 
         setPlacementInfoText(whichShip);
 
-        if(whichShip === shipsToPlace.length - 1){
+        if(whichShip === shipsToPlace.length - 1 && whichFieldOfShip === currentShipLength + 1){
             document.getElementById("shipPlacingInfo").className = "red";
             document.getElementById("shipPlacingInfo").innerHTML = "Your board is ready";
 

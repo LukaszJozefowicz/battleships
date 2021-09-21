@@ -16,6 +16,7 @@ window.onload = function load(){
     connect();
     document.getElementById("chatOutput").value = "";
     document.getElementById("chatInput").focus();
+    document.getElementById("backToMenu").style.display = "block";
 }
 window.onbeforeunload = function unload(){
     disconnect();
