@@ -141,6 +141,7 @@ th.id-col {
     background-color: transparent;
     border:none;
     outline:none;
+    pointer-events: none;
 }
 
 table.staticInfo {

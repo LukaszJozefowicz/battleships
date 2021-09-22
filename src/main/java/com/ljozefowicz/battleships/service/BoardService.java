@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface BoardService {
     Board initializeBoard();
+    void deleteBoard(Long id);
     Board updateField(Board board, String coords, FieldStatus fieldStatus);
     List<List<Field>> getFieldsList(Board board);
     Board resetBoard(Board board);

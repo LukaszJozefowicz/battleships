@@ -9,6 +9,7 @@ import com.ljozefowicz.battleships.enums.GameState;
 import com.ljozefowicz.battleships.model.beans.ActiveUsersList;
 import com.ljozefowicz.battleships.model.beans.ActiveGamesList;
 import com.ljozefowicz.battleships.model.entity.Game;
+import com.ljozefowicz.battleships.service.BoardService;
 import com.ljozefowicz.battleships.service.GameService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -27,13 +28,15 @@ import java.util.stream.Collectors;
 public class GameLobbyController {
 
     GameService gameService;
+    BoardService boardService;
     ActiveUsersList activeUsersList;
     ActiveGamesList activeGamesList;
     DtoMapper dtoMapper;
     SimpMessagingTemplate messagingTemplate;
 
-    public GameLobbyController(GameService gameService, ActiveUsersList activeUsersList, ActiveGamesList activeGamesList, DtoMapper dtoMapper, SimpMessagingTemplate messagingTemplate) {
+    public GameLobbyController(GameService gameService, BoardService boardService, ActiveUsersList activeUsersList, ActiveGamesList activeGamesList, DtoMapper dtoMapper, SimpMessagingTemplate messagingTemplate) {
         this.gameService = gameService;
+        this.boardService = boardService;
         this.activeUsersList = activeUsersList;
         this.activeGamesList = activeGamesList;
         this.dtoMapper = dtoMapper;
@@ -48,14 +51,7 @@ public class GameLobbyController {
 
     @GetMapping("/gameLobby")
     public String getGameLobby(Principal principal){
-        //List<Game> games = gameService.getAvailableGames();
-
         activeUsersList.getUsersList().add(principal.getName());
-        //List<String> loggedUsers = activeUsersList.getUsersList();
-        //System.out.println("list of users");
-        //System.out.println("length " + loggedUsers.size());
-        //for(String u : loggedUsers) System.out.println(u + " ");
-
         return "game-lobby";
     }
 
@@ -76,13 +72,9 @@ public class GameLobbyController {
     @MessageMapping("/userLeft")
     @SendTo("/gameLobby")
     public String sendUsersListAfterUserLeft(String jsonList){
-//        System.out.println("user left json list string: " + jsonList);
         Type listType = new TypeToken<ArrayList<String>>(){}.getType();
         List<String> listFromJson = new Gson().fromJson(jsonList, listType);
 
-//        for (String s : listFromJson){
-//            System.out.println(s + " ");
-//        }
         activeUsersList.setUsersList(listFromJson);
         return jsonList;
     }
@@ -101,9 +93,6 @@ public class GameLobbyController {
     @SendTo("/gameLobby")
     public String sendGamesList(){
 
-//        System.out.println("available games");
-//        for(GameDto g : activeGamesList.getGamesList()) System.out.println(g + "\n");
-
         return new Gson().toJson(activeGamesList.getGamesList(), List.class);
     }
 
@@ -120,65 +109,48 @@ public class GameLobbyController {
     @MessageMapping("/joinGame/{gameId}")
     @SendTo("/gameLobby")
     public String joinGame(Principal principal, @DestinationVariable Long gameId){
-        //add user to created game
+        //add user to created game in db
         gameService.joinGameById(gameId, principal.getName());
 
         //add user to activeGamesList sent through webSocket
-        GameDto gameDto = activeGamesList.getGamesList()
-                .stream()
-                .filter(g -> g.getId().equals(gameId))
-                .findFirst()
-                .orElse(null);
-        int index = activeGamesList.getGamesList().indexOf(gameDto);
-        activeGamesList.getGamesList().get(index).setPlayer2(principal.getName());
-        activeGamesList.getGamesList().get(index).setGameState(GameState.READY_TO_START.name());
-
-        /*
-        //if user joined and has a created game, delete it from the list
-        Game possibleCreatedGame = gameService.findGameByPlayer1Username(principal.getName());
-        if(possibleCreatedGame != null){
-            //Long createdGameId = gameService.findGameIdByPlayer1Username(principal.getName());
-            gameService.deleteGame(gameId);
-            activeGamesList.getGamesList().remove(dtoMapper.mapToGameDto(possibleCreatedGame));
-        }*/
+        setPlayerJoinedInfoInActiveGamesList(gameId, principal.getName(), GameState.READY_TO_START);
 
         return new Gson().toJson(activeGamesList.getGamesList(), List.class);
     }
 
-    @MessageMapping("/deleteGame")
+    @MessageMapping("/deleteGameOrUserJoined")
     @SendTo("/gameLobby")
-    public String deleteGameAndJoinedUserAfterUserLeft(Principal principal){
+    public String deleteGameOrUserJoinedAfterUserLeft(Principal principal){
 
-        Long gameId = gameService.findGameIdByPlayer1Username(principal.getName());
-        Game createdGame = gameService.findGameByPlayer1Username(principal.getName());
-//        System.out.println("game id: " + gameId);
-
-        if(gameId != null) {
-            if(!createdGame.getGameState().equals(GameState.IN_GAME)) {
-                gameService.deleteGame(gameId);
-            }
-//            System.out.println("removing game from list: " + dtoMapper.mapToGameDto(createdGame));
+        //delete game created by user once he left the lobby
+//        Game createdGame = gameService.findGameByPlayer1Username(principal.getName());
+//
+//        if(createdGame != null) {
+//            if(!createdGame.getGameState().equals(GameState.IN_GAME)) {
+//                gameService.deleteGame(createdGame.getId());
+//            }
+//            activeGamesList.getGamesList().remove(dtoMapper.mapToGameDto(createdGame));
+//        }
+        System.out.println("activeGamesList before: " + activeGamesList.getGamesList());
+        gameService.findGameByPlayer1UsernameNotInGame(principal.getName()).ifPresent(createdGame -> {
+            gameService.deleteGame(createdGame.getId());
             activeGamesList.getGamesList().remove(dtoMapper.mapToGameDto(createdGame));
-        }
+        });
 
-        //remove player from game that he joined and it didn't start yet
-        Game possibleGameJoined = gameService.findGameByPlayer2Username(principal.getName());
-        if(possibleGameJoined != null && !possibleGameJoined.getGameState().equals(GameState.IN_GAME)){
+        //remove user if he was present in active games as player2 (joined), once he left the lobby
+        gameService.findGameByPlayer2UsernameNotInGame(principal.getName()).ifPresent(possibleGameJoined -> {
+            final Long boardIdToDelete = possibleGameJoined.getSecondPlayerBoard().getId();
             possibleGameJoined.setPlayer2(null);
+            possibleGameJoined.setSecondPlayerBoard(null);
             possibleGameJoined.setGameState(GameState.WAITING_FOR_PLAYERS);
+
             gameService.updateGameState(possibleGameJoined);
+            boardService.deleteBoard(boardIdToDelete);
 
-            GameDto gameDto = activeGamesList.getGamesList()
-                    .stream()
-                    .filter(g -> g.getPlayer2().equals(principal.getName()))
-                    .findFirst()
-                    .orElse(null);
-            int index = activeGamesList.getGamesList().indexOf(gameDto);
-            activeGamesList.getGamesList().get(index).setPlayer2("waiting for player");
-            activeGamesList.getGamesList().get(index).setGameState(GameState.WAITING_FOR_PLAYERS.name());
-        }
+            setPlayerJoinedInfoInActiveGamesList(possibleGameJoined.getId(), "waiting for player", GameState.WAITING_FOR_PLAYERS);
+        });
 
-        //for(GameDto g : activeGamesList.getGamesList()) System.out.println("gamesListAfterLeft: "+g);
+        System.out.println("activeGamesList after: " + activeGamesList.getGamesList());
         return new Gson().toJson(activeGamesList.getGamesList(), List.class);
     }
 
@@ -188,7 +160,7 @@ public class GameLobbyController {
     public void notifyUserNewGameStarted(String msg){
         GameDto gameToStart = new Gson().fromJson(msg, GameDto.class);
 
-        Game game = gameService.findGameById(gameToStart.getId());
+        Game game = gameService.findGameById(gameToStart.getId()).orElse(null);
         game.setGameState(GameState.IN_GAME);
         gameService.updateGameState(game);
 
@@ -198,5 +170,16 @@ public class GameLobbyController {
         //System.out.println("game to start: " + gameToStart);
         messagingTemplate.convertAndSendToUser(gameToStart.getPlayer2(), "/queue/notify", msg);
         messagingTemplate.convertAndSendToUser(gameToStart.getPlayer1(), "/queue/notify", msg);
+    }
+
+    private void setPlayerJoinedInfoInActiveGamesList(Long gameId, String playerName, GameState gameState){
+        GameDto gameDto = activeGamesList.getGamesList()
+                .stream()
+                .filter(game -> game.getId().equals(gameId))
+                .findFirst()
+                .orElse(null);
+        int index = activeGamesList.getGamesList().indexOf(gameDto);
+        activeGamesList.getGamesList().get(index).setPlayer2(playerName);
+        activeGamesList.getGamesList().get(index).setGameState(gameState.name());
     }
 }

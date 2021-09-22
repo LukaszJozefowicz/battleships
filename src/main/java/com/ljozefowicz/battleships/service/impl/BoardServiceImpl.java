@@ -32,12 +32,14 @@ public class BoardServiceImpl implements BoardService{
         FieldStatus[][] fieldStatusArray = new FieldStatus[10][10];
         Arrays.stream(fieldStatusArray).forEach(e -> Arrays.fill(e, FieldStatus.EMPTY));
         Board boardToSave = Board.builder()
-                //.id(id)
                 .persistedBoard(new Gson().toJson(fieldStatusArray))
-                //.ships(initializeListOfShips())
                 .build();
-        //boardToSave.getShips().forEach(e -> e.setBoard(boardToSave));
         return boardRepository.save(boardToSave);
+    }
+
+    @Override
+    public void deleteBoard(Long boardId){
+        boardRepository.deleteById(boardId);
     }
 
     @Override
@@ -239,7 +241,7 @@ public class BoardServiceImpl implements BoardService{
                 .stream()
                 .filter(s -> !s.getIsDestroyed())
                 .collect(Collectors.toList());
-        return shipsAlive.size() > 0 ? false : true;
+        return shipsAlive.size() <= 0;
     }
 
     @Override

@@ -15,6 +15,7 @@ window.onload = () => {
     document.getElementById("chatOutput").value = "";
     document.getElementById("chatInput").focus();
     document.getElementById("backToMenu").style.display = "none";
+    document.getElementById("backButton").style.visibility = "hidden";
 //    console.log("ready state: " + socket.readyState);
 }
 window.onbeforeunload = () => {
@@ -69,6 +70,8 @@ function connect(){
                         receiveChatMessage(payloadBody);
                      } else if(payloadBody.messageType === "currentTurnInfo"){
                         appendCurrentTurnInfo(payloadBody);
+                     } else if(payloadBody.messageType === "leaveGame"){
+                        playerLeftInfo(payloadBody);
                      }
             });
 
@@ -101,6 +104,7 @@ function connect(){
                         textOutput.value += "All " + payloadBody.opponentPlayer + "'s ships are sunk\n"
                                        + payloadBody.currentPlayer + " won!!\n";
                         textOutput.scrollTop = textOutput.scrollHeight;
+                        document.getElementById("backButton").style.visibility = "visible";
                     }
             });
 
@@ -112,6 +116,11 @@ function connect(){
 
 function disconnect(){
     if(client != null) {
+
+        client.send('/ws/leaveGame/' + gameId, {}, JSON.stringify({
+                messageType: "leaveGame",
+                username: authenticatedUserName,
+                message: "msg"}));
 
         client.disconnect(payload => {
             client.disconnect();
@@ -158,6 +167,11 @@ function receiveChatMessage(payloadBody){
 
 function appendCurrentTurnInfo(payloadBody){
     textOutput.value += payloadBody.message + payloadBody.username + "\n";
+    textOutput.scrollTop = textOutput.scrollHeight;
+}
+
+function playerLeftInfo(payloadBody){
+    textOutput.value += payloadBody.username + " left\n";
     textOutput.scrollTop = textOutput.scrollHeight;
 }
 

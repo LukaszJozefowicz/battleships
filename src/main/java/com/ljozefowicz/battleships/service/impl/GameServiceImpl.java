@@ -9,27 +9,24 @@ import com.ljozefowicz.battleships.repository.GameRepository;
 import com.ljozefowicz.battleships.repository.UserRepository;
 import com.ljozefowicz.battleships.service.BoardService;
 import com.ljozefowicz.battleships.service.GameService;
-import com.ljozefowicz.battleships.service.LoggedInService;
 import com.ljozefowicz.battleships.service.UserService;
 import lombok.AllArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 @Service
 @AllArgsConstructor
 public class GameServiceImpl implements GameService {
 
-    private GameRepository gameRepository;
-    private UserRepository userRepository;
-    private UserService userService;
-    private BoardService boardService;
-    private LoggedInService loggedInService;
+    private final GameRepository gameRepository;
+    private final UserRepository userRepository;
+    private final UserService userService;
+    private final BoardService boardService;
+    //private final LoggedInService loggedInService;
 
     @Override
     @Transactional
@@ -42,7 +39,7 @@ public class GameServiceImpl implements GameService {
                 .firstPlayerBoard(boardService.initializeBoard())
                 .secondPlayerBoard(null)
                 .gameState(GameState.WAITING_FOR_PLAYERS)
-                .playerTurn(new Random().nextBoolean() == true ? GameTurn.PLAYER1 : GameTurn.PLAYER2)
+                .playerTurn(new Random().nextBoolean() ? GameTurn.PLAYER1 : GameTurn.PLAYER2)
                 .build();
 
         return gameRepository.save(newGame);
@@ -61,29 +58,38 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public Long findGameIdByPlayer1Username(String username) {
-        User user = userRepository.findByUsername(username).orElse(null);
-        Game game = gameRepository.findByPlayer1_id(user.getId()).orElse(null);
-        if(game != null) {
-            return game.getId();
-        }
-        return null;
+        User user = userRepository.findByUsername(username).orElseGet(() -> User.builder().id(0L).build());
+        Game game = gameRepository.findByPlayer1_id(user.getId()).orElseGet(() -> Game.builder().id(0L).build());
+        return game.getId() != 0L ? game.getId() : null;
     }
 
     @Override
-    public Game findGameByPlayer1Username(String username) {
-        User user = userRepository.findByUsername(username).orElse(null);
-        return gameRepository.findByPlayer1_id(user.getId()).orElse(null);
+    public Optional<Game> findGameByPlayer1Username(String username) {
+        User user = userRepository.findByUsername(username).orElseGet(() -> User.builder().id(0L).build());
+        return gameRepository.findByPlayer1_id(user.getId());
     }
 
     @Override
     public Game findGameByPlayer2Username(String username) {
-        User user = userRepository.findByUsername(username).orElse(null);
+        User user = userRepository.findByUsername(username).orElseGet(() -> User.builder().id(0L).build());
         return gameRepository.findByPlayer2_id(user.getId()).orElse(null);
     }
 
     @Override
+    public Optional<Game> findGameByPlayer1UsernameNotInGame(String username) {
+        User user = userRepository.findByUsername(username).orElseGet(() -> User.builder().id(0L).build());
+        return gameRepository.findByPlayer1_idAndGameStateNot(user.getId(), GameState.IN_GAME);
+    }
+
+    @Override
+    public Optional<Game> findGameByPlayer2UsernameNotInGame(String username) {
+        User user = userRepository.findByUsername(username).orElseGet(() -> User.builder().id(0L).build());
+        return gameRepository.findByPlayer2_idAndGameStateNot(user.getId(), GameState.IN_GAME);
+    }
+
+    @Override
     public Game findGameByUsername(String username) {
-        User user = userRepository.findByUsername(username).orElse(null);
+        User user = userRepository.findByUsername(username).orElseGet(() -> User.builder().id(0L).build());
         return gameRepository.findByPlayer1_idOrPlayer2_id(user.getId(), user.getId()).orElse(null);
     }
 
@@ -93,15 +99,15 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public Game findGameById(Long id){
-        return gameRepository.findById(id).orElse(null);
+    public Optional<Game> findGameById(Long id){
+        return gameRepository.findById(id);
     }
 
     @Override
     @Transactional
     public Game joinGameById(Long id, String username){
-        Game gameToJoin = gameRepository.findById(id).orElse(null);
-        User currentUser = userRepository.findByUsername(username).orElse(null);
+        Game gameToJoin = gameRepository.findById(id).orElseGet(() -> Game.builder().id(0L).build());
+        User currentUser = userRepository.findByUsername(username).orElseGet(() -> User.builder().id(0L).build());
         gameToJoin.setPlayer2(currentUser);
         gameToJoin.setSecondPlayerBoard(boardService.initializeBoard());
         gameToJoin.setGameState(GameState.READY_TO_START);

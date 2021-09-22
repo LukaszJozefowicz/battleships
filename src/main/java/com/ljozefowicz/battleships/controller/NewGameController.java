@@ -1,12 +1,12 @@
 package com.ljozefowicz.battleships.controller;
 
 import com.google.gson.Gson;
-import com.ljozefowicz.battleships.dto.ShipPlacementInfoDto;
-import com.ljozefowicz.battleships.dto.MessageDto;
-import com.ljozefowicz.battleships.dto.ShipPlacementInfoForOpponentDto;
-import com.ljozefowicz.battleships.dto.ShotInfoDto;
+import com.ljozefowicz.battleships.dto.*;
+import com.ljozefowicz.battleships.dto.mapper.DtoMapper;
 import com.ljozefowicz.battleships.enums.FieldStatus;
 import com.ljozefowicz.battleships.enums.GameTurn;
+import com.ljozefowicz.battleships.model.beans.ActiveGamesList;
+import com.ljozefowicz.battleships.model.beans.ActiveUsersList;
 import com.ljozefowicz.battleships.model.entity.Board;
 import com.ljozefowicz.battleships.model.entity.Game;
 import com.ljozefowicz.battleships.service.AllowedShipService;
@@ -33,10 +33,25 @@ public class NewGameController {
     BoardService boardService;
     AllowedShipService allowedShipService;
     SimpMessagingTemplate messagingTemplate;
+    ActiveGamesList activeGamesList;
+    DtoMapper dtoMapper;
+
+//    public NewGameController(GameService gameService, BoardService boardService, ActiveGamesList activeGamesList, DtoMapper dtoMapper, SimpMessagingTemplate messagingTemplate) {
+//        this.gameService = gameService;
+//        this.boardService = boardService;
+//        this.activeGamesList = activeGamesList;
+//        this.dtoMapper = dtoMapper;
+//        List<GameDto> games = this.gameService.getAvailableGames()
+//                .stream()
+//                .map(dtoMapper::mapToGameDto)//g -> dtoMapper.mapToGameDto(g)
+//                .collect(Collectors.toList());
+//        this.activeGamesList.getGamesList().addAll(games);
+//        this.messagingTemplate = messagingTemplate;
+//    }
 
     @GetMapping("/newGame/{gameId}")
     public String createNewGame(Model model, @PathVariable Long gameId, Principal principal){
-        Game game = gameService.findGameById(gameId);
+        Game game = gameService.findGameById(gameId).orElse(null);
         Board playerBoard, opponentBoard;
         if(principal.getName().equals(game.getPlayer1().getUsername())){
             playerBoard = game.getFirstPlayerBoard();
@@ -68,7 +83,7 @@ public class NewGameController {
     //@SendToUser("/newGame/{gameId}")
     public void sendShipsPlacementInfoToOpponent(ShipPlacementInfoForOpponentDto placementInfo, @DestinationVariable Long gameId, Principal principal){
 
-        Game currentGame = gameService.findGameById(gameId);
+        Game currentGame = gameService.findGameById(gameId).orElse(null);
         String opponentUser = principal.getName().equals(currentGame.getPlayer1().getUsername()) ?
             currentGame.getPlayer2().getUsername() : currentGame.getPlayer1().getUsername();
 
@@ -113,7 +128,7 @@ public class NewGameController {
     @SendTo("/sendInfoMessage/{gameId}")
     public MessageDto sendCurrentTurnInfo(MessageDto messageObj, @DestinationVariable Long gameId){
 
-        Game currentGame = gameService.findGameById(gameId);
+        Game currentGame = gameService.findGameById(gameId).orElse(null);
 
         return MessageDto.builder()
                 .messageType(messageObj.getMessageType())
@@ -124,11 +139,31 @@ public class NewGameController {
                 .build();
     }
 
+    @MessageMapping("/leaveGame/{gameId}")
+    @SendTo("/sendInfoMessage/{gameId}")
+    public MessageDto leaveGame(MessageDto messageObj, @DestinationVariable Long gameId){
+
+        //Game currentGame =
+        gameService.findGameById(gameId).ifPresent(currentGame -> {
+            System.out.println("gamesList in NewGameController before: " + activeGamesList.getGamesList());
+
+            gameService.deleteGame(currentGame.getId());
+            activeGamesList.getGamesList().remove(dtoMapper.mapToGameDto(currentGame));
+        });
+
+        System.out.println("gamesList in NewGameController after: " + activeGamesList.getGamesList());
+        return MessageDto.builder()
+                .messageType("leaveGame")
+                .username(messageObj.getUsername())
+                .message(messageObj.getMessage())
+                .build();
+    }
+
     @MessageMapping("/shoot/{gameId}")
     @SendTo("/newGame/{gameId}/shoot")
     public ShotInfoDto shoot(ShotInfoDto shotInfo, @DestinationVariable Long gameId){
 
-        Game currentGame = gameService.findGameById(gameId);
+        Game currentGame = gameService.findGameById(gameId).orElse(null);
 
         String currentPlayer = gameService.getActivePlayerUsername(currentGame);
         String opponentPlayer = gameService.getInactivePlayerUsername(currentGame);
@@ -148,7 +183,7 @@ public class NewGameController {
             isAllShipsSunk = boardService.checkIfAllShipsAreSunk(opponentPlayerBoard.getId());
             if(isAllShipsSunk) {
                 shipFieldsToReveal = boardService.getShipFieldsToReveal(currentPlayerBoard.getId());
-                gameService.deleteGame(gameId);
+                //gameService.deleteGame(gameId);
             }
         }
         if(!isAllShipsSunk)
