@@ -18,7 +18,6 @@ window.onload = function load(){
 }
 window.onbeforeunload = function unload(){
     disconnect();
-    window.location = '/logout';
 }
 
 function connect(){
@@ -35,7 +34,8 @@ function connect(){
                 payloadBody = JSON.parse(payload.body);
 
                 if(Array.isArray(payloadBody)
-                   && payloadBody[0] === "usersList"){
+//                   && payloadBody[0] === "usersList"){
+                    && payloadBody.includes("usersList")){
                                 let usersTableBody = document.getElementById('users-online-tbody');
                                 usersTableBody.remove();
                                 activeUsersList = payloadBody;
@@ -47,8 +47,6 @@ function connect(){
                 } else if(Array.isArray(payloadBody)
                          && payloadBody[0].id === 0
                          && payloadBody[0].gameState !== undefined){
-//                                let gamesTableBody = document.getElementById('gamesTableBody');
-//                                gamesTableBody.remove();
                                 activeGamesList = payloadBody;
                                 generateGamesTable();
                 }

@@ -10,7 +10,7 @@ public interface BoardService {
     Board initializeBoard();
     void deleteBoard(Long id);
     Board updateField(Board board, String coords, FieldStatus fieldStatus);
-    List<List<Field>> getFieldsList(Board board);
+    FieldStatus[][] getBoardAsArray(Board board);
     Board resetBoard(Board board);
     Board addShipField(Board board, String type, int shipLength, String coords);
     String getShotResult(Board board, String coords);
@@ -18,6 +18,4 @@ public interface BoardService {
     String getFieldsOfShipByCoords(Board board, String coords);
     boolean checkIfAllShipsAreSunk(Long boardId);
     String getShipFieldsToReveal(Long boardId);
-//    Ship getShipByField(Long boardId, String field);
-    Board getBoardById(Long id);
 }

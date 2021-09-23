@@ -1,3 +1,5 @@
+//global vars shared from webSocketNewGame.js
+
 function startShootingPhase(){
 
     let yourInfo = document.getElementById("shipPlacingInfo");
@@ -5,10 +7,8 @@ function startShootingPhase(){
     yourInfo.remove();
     opponentInfo.remove();
 
-    let staticInfo = document.getElementById("gameStaticInfo");
-    let liveInfo = document.getElementById("gameLiveInfo");
-    staticInfo.style.visibility = "visible";
-    liveInfo.style.visibility = "visible";
+    document.getElementById("gameStaticInfo").style.display = "inline-block";
+    document.getElementById("gameLiveInfo").style.display = "inline-block";
 
     appendCurrentTurnInfo({username: startingPlayer,        //th:inline in boards.html
                            message: "The game has started!\nPlayer to start chosen randomly.\nCurrent turn: "});
@@ -20,20 +20,12 @@ function startShootingPhase(){
             setCellActive(cell);
         });
     }
-
-//    let gameInfo = document.getElementById("gameLiveInfo");
-//    let h5 = document.createElement('h5');
-//    h5.className = "centered";
-//    h5.innerHTML = "The game has started";
-//    gameInfo.appendChild(h5);
 }
 
 function shoot(payloadBody){
 
     let tileHit;
     let cells;
-    console.log("authenticatedUserName: " + authenticatedUserName);
-    console.log("PAYLOAD IN SHOOT: " + payloadBody.currentPlayer + " " + payloadBody.opponentPlayer + " " + payloadBody.shotResult + " " + payloadBody.coords + " " + payloadBody.coords);
 
     if(payloadBody.currentPlayer === authenticatedUserName){
         cells = document.querySelectorAll(".opp-btn");
@@ -67,8 +59,9 @@ function shoot(payloadBody){
                             ? document.querySelectorAll(".opp-btn[fieldstatus='shipSunk']")
                             : document.querySelectorAll(".my-btn[fieldstatus='shipSunk']")
             disableFieldsAroundSunkShip(cells, sunkShips);
+
             if(payloadBody.allShipsSunk === true){
-                setupGameFinished(payloadBody);
+                setupGameFinished();
                 let cells = payloadBody.currentPlayer === authenticatedUserName
                             ? document.querySelectorAll(".my-btn")
                             : document.querySelectorAll(".opp-btn")
@@ -136,7 +129,7 @@ function disableFieldsAroundSunkShip(cells, sunkShips){
     });
 }
 
-function setupGameFinished(payloadBody){
+function setupGameFinished(){
     let bothBoardsCells = document.querySelectorAll(".my-btn, .opp-btn");
     bothBoardsCells.forEach(cell => {
         cell.disabled=true;
@@ -154,4 +147,32 @@ function revealPlayerWonShips(cells, shipsToReveal){
             }
         });
     });
+}
+
+function receiveChatMessage(payloadBody){
+
+    textOutput.value += payloadBody.username + ":" + payloadBody.message + "\n";
+    textOutput.scrollTop = textOutput.scrollHeight;
+}
+
+function appendCurrentTurnInfo(payloadBody){
+    textOutput.value += payloadBody.message + payloadBody.username + "\n";
+    textOutput.scrollTop = textOutput.scrollHeight;
+}
+
+function playerLeftInfo(payloadBody){
+
+    document.getElementById("backToLobby").style.display = "flex";
+    if(document.getElementById("gameLiveInfo").style.display === "none"){
+        let duringGameInfo = document.getElementById("duringGameInfo");
+        let opponentLeftInfo = document.createElement('h3');
+        opponentLeftInfo.style.textAlign = "center";
+        opponentLeftInfo.style.color = "red";
+        opponentLeftInfo.style.fontWeight = "bold";
+        opponentLeftInfo.innerHTML = "Opponent left";
+        duringGameInfo.appendChild(opponentLeftInfo);
+    }
+    setupGameFinished();
+    textOutput.value += payloadBody.username + " left\n";
+    textOutput.scrollTop = textOutput.scrollHeight;
 }

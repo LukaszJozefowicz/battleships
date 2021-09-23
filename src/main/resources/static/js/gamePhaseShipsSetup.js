@@ -2,8 +2,8 @@
 //var isOpponentReady = false;
 //var whichShip = 0;
 //var whichFieldOfShip  = 1;
-
-//var shipsToPlace = JSON.parse([[${shipsToPlace}]]); --global var declared in boards.html th:inline script
+//var shipsToPlace = JSON.parse([[${shipsToPlace}]]);
+//global vars declared in boards.html th:inline script
 
 function resetBoard(){
     whichShip = 0;
@@ -34,11 +34,10 @@ function resetBoard(){
                     this.style.cursor = "default";
                 }
         });
-        document.getElementById("shipPlacingInfo").innerHTML = "Ship Placement phase."
-                    + "<br>Place ships by clicking."
-                    + "<br>Longest ships first."
-
-    })
+    });
+    document.getElementById("shipPlacingInfo").innerHTML = "Ship Placement phase."
+                        + "<br>Place ships by clicking."
+                        + "<br>Longest ships first.";
     sendResetBoard();
 }
 
@@ -48,9 +47,9 @@ function setShipPlacementInfo(){
 
         whichFieldOfShip++;
 
-        console.log("which ship: " + whichShip);
-        console.log("which field of ship: " + whichFieldOfShip);
-        console.log("shipsToPlace length: " + shipsToPlace.length);
+//        console.log("which ship: " + whichShip);
+//        console.log("which field of ship: " + whichFieldOfShip);
+//        console.log("shipsToPlace length: " + shipsToPlace.length);
 
         setPlacementInfoText(whichShip);
 
@@ -63,23 +62,20 @@ function setShipPlacementInfo(){
             whichFieldOfShip = 1;
             whichShip++;
 
-        } else
-        if(whichFieldOfShip === currentShipLength + 1){
+        } else if(whichFieldOfShip === currentShipLength + 1){
             whichFieldOfShip = 1;
             setPlacementInfoText(whichShip+1);
-
-        whichShip++;
+            whichShip++;
         }
-
 }
 
-function setPlacementInfoText(which){
+function setPlacementInfoText(shipCount){
     var placementInfoText = "Available ships:<br><span style = \"color:red\">";
 
-            for(let i = which; i < shipsToPlace.length; i++){
+            for(let i = shipCount; i < shipsToPlace.length; i++){
                 placementInfoText += shipsToPlace[i].type
                                     + " length: " + shipsToPlace[i].length;
-                if(i === which){
+                if(i === shipCount){
                     placementInfoText += "</span>";
                 }
                 placementInfoText += "<br>";
@@ -87,7 +83,7 @@ function setPlacementInfoText(which){
 
             document.getElementById("shipPlacingInfo").innerHTML = placementInfoText;
             if(socket.readyState === 1)
-                sendPlacementInfoToOpponent(shipsToPlace[which].type, shipsToPlace[which].whichOfAKind, "false");
+                sendPlacementInfoToOpponent(shipsToPlace[shipCount].type, shipsToPlace[shipCount].whichOfAKind, "false");
 }
 
 function setShip(that){
@@ -126,8 +122,8 @@ function highlightNeighbors(){
                     cell.style.backgroundColor = "#add8e6";  //default color
                     cell.disabled=true;
                 }
-            })
-        })
+            });
+        });
 }
 
 function disableFieldsAroundPlacedShip(){
@@ -148,8 +144,8 @@ function disableFieldsAroundPlacedShip(){
             else if(cell.getAttribute('fieldstatus') === "empty"){
                 cell.disabled=false;
             }
-        })
-    })
+        });
+    });
 }
 
 function disableAllFields(){
@@ -182,6 +178,7 @@ function isNeighbor(cell, button){
         ) return true;
         else return false;
 }
+
 function isNeighborDiagonally(cell, button){
     if( (isNeighborUpRight(cell, button) || isNeighborUpLeft(cell, button) || isNeighborDownRight(cell, button) || isNeighborDownLeft(cell, button))
         && cell.getAttribute('fieldstatus') === "empty"
@@ -200,13 +197,13 @@ function isNeighborLeft(cell, button){
         && parseInt(button.id.substring(0,1)) - 1 >= 0
 }
 function isNeighborDown(cell, button){
-    return parseInt(button.id.substring(0,1)) == parseInt(cell.id.substring(0,1)) &&
-        parseInt(button.id.substring(1,2)) + 1 == parseInt(cell.id.substring(1,2))
+    return parseInt(button.id.substring(0,1)) == parseInt(cell.id.substring(0,1))
+        && parseInt(button.id.substring(1,2)) + 1 == parseInt(cell.id.substring(1,2))
         && parseInt(button.id.substring(1,2)) + 1 <= 9
 }
 function isNeighborUp(cell, button){
-    return parseInt(button.id.substring(0,1)) == parseInt(cell.id.substring(0,1)) &&
-        parseInt(button.id.substring(1,2)) - 1 == parseInt(cell.id.substring(1,2))
+    return parseInt(button.id.substring(0,1)) == parseInt(cell.id.substring(0,1))
+        && parseInt(button.id.substring(1,2)) - 1 == parseInt(cell.id.substring(1,2))
         && parseInt(button.id.substring(1,2)) - 1 >= 0
 }
 function isNeighborUpRight(cell, button){
@@ -235,8 +232,6 @@ function isNeighborDownLeft(cell, button){
 }
 
 function setAllShipsRandomly(){
-//    console.log("counterForAutoPlaceShips: " + counterForAutoPlaceShips);
-//    console.log("whichShip: " + whichShip);
             var cells = document.querySelectorAll("#boardTable .my-btn");
             var activeCells = [];
 

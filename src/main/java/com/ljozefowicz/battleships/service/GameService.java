@@ -10,15 +10,12 @@ public interface GameService {
     Game createNewGame(String username);
 
     void deleteGame(Long id);
-    Long findGameIdByPlayer1Username(String username);
-    Optional<Game> findGameByPlayer1Username(String username);
-    Game findGameByPlayer2Username(String username);
     Optional<Game> findGameByPlayer1UsernameNotInGame(String username);
     Optional<Game> findGameByPlayer2UsernameNotInGame(String username);
-    Game findGameByUsername(String username);
+    Optional<Game> findGameByUsername(String username);
     List<Game> getAvailableGames();
     Game joinGameById(Long id, String username);
-    Game updateGameState(Game game);
+    Game updateGameData(Game game);
     Optional<Game> findGameById(Long id);
     Board getBoardByPlayerName(Game game, String username);
     Board getActivePlayerBoard(Game game);

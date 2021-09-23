@@ -15,9 +15,9 @@ import org.springframework.stereotype.Service;
 @AllArgsConstructor
 public class LoggedInServiceImpl implements LoggedInService {
 
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
 
-    private UserDetailsServiceImpl userDetailsServiceImpl;
+    private final UserDetailsServiceImpl userDetailsServiceImpl;
 
     private static final Logger logger = LoggerFactory.getLogger(LoggedInServiceImpl.class);
 

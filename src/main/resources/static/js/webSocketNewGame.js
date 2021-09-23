@@ -3,24 +3,23 @@ var client = null;
 var currentURL = window.location.href;
 var gameId = currentURL.substring(currentURL.indexOf("newGame/") + 8)
 var chatText = "";
-document.getElementById("chatInput").value = "";
 var textOutput = document.getElementById("chatOutput");
 let authenticatedUserTag = document.getElementById("currentUsername");
 let authenticatedUserName = authenticatedUserTag.innerHTML;
+//some global vars used here are declared in boards.html script tag
 
 window.onload = () => {
     resetTimer();
     idleLogout();
     connect();
-    document.getElementById("chatOutput").value = "";
+    document.getElementById("chatInput").value = "";
     document.getElementById("chatInput").focus();
+    document.getElementById("chatOutput").value = "";
     document.getElementById("backToMenu").style.display = "none";
-    document.getElementById("backButton").style.visibility = "hidden";
-//    console.log("ready state: " + socket.readyState);
+    document.getElementById("backToLobby").style.display = "none";
 }
 window.onbeforeunload = () => {
     disconnect();
-    window.location = '/logout';
 }
 
 function connect(){
@@ -35,8 +34,7 @@ function connect(){
             client.subscribe("/user/queue/sendPlacementInfo/" + gameId, payload => {
 
                 payloadBody = JSON.parse(payload.body);
-                console.log("payload body sendPlacementInfo" + payload.body);
-                console.log("json parsed " + payloadBody)
+
                 if(payloadBody.shipName !== undefined
                     && payloadBody.whichOfAKind !== undefined
                     && payloadBody.isAllShipsPlaced !== undefined){
@@ -44,8 +42,7 @@ function connect(){
                         let oppPlacementInfo = document.getElementById("opponentShipPlacingInfo");
                         if(payloadBody.isAllShipsPlaced === "false"){
                             oppPlacementInfo.innerHTML = "Opponent is placing " + payloadBody.shipName + payloadBody.whichOfAKind;
-                        } else
-                        if(payloadBody.isAllShipsPlaced === "true"){
+                        } else if(payloadBody.isAllShipsPlaced === "true"){
                             oppPlacementInfo.innerHTML = "Opponent has finished placing his ships.";
                             if(areYouReady){
                                 startShootingPhase();
@@ -64,27 +61,25 @@ function connect(){
 
             client.subscribe("/sendInfoMessage/" + gameId, payload => {
                      payloadBody = JSON.parse(payload.body);
-                     console.log("INFO MESSAGE payload body " + payload.body);
-                     console.log("json parsed " + payloadBody)
-                     if(payloadBody.messageType === "gameChatMsg"){
-                        receiveChatMessage(payloadBody);
-                     } else if(payloadBody.messageType === "currentTurnInfo"){
-                        appendCurrentTurnInfo(payloadBody);
-                     } else if(payloadBody.messageType === "leaveGame"){
-                        playerLeftInfo(payloadBody);
-                     }
+
+                    switch(payloadBody.messageType){
+                        case "gameChatMsg":
+                            receiveChatMessage(payloadBody);
+                            break;
+                        case "leaveGame":
+                            playerLeftInfo(payloadBody);
+                            break;
+                    }
             });
 
             client.subscribe("/newGame/" + gameId + "/shoot", payload => {
                     payloadBody = JSON.parse(payload.body);
-                    console.log("SHOOT payload body " + payload.body);
-                    console.log("json parsed " + payloadBody)
+
                     shoot(payloadBody);
 
                     let row = parseInt(String.fromCharCode(parseInt(payloadBody.coords.substring(0,1)) + 48)) + 1;  // 1-10
                     let col = String.fromCharCode(parseInt(payloadBody.coords.substring(1,2)) + 65);                // A-J
                     let shotResultInfo = payloadBody.currentPlayer + " shot: " + col + row + "\n";
-                    console.log("row: " + row + " col: " + col);
 
                     switch(payloadBody.shotResult){
                             case "SHIP_HIT":
@@ -104,13 +99,11 @@ function connect(){
                         textOutput.value += "All " + payloadBody.opponentPlayer + "'s ships are sunk\n"
                                        + payloadBody.currentPlayer + " won!!\n";
                         textOutput.scrollTop = textOutput.scrollHeight;
-                        document.getElementById("backButton").style.visibility = "visible";
+                        document.getElementById("backToLobby").style.display = "flex";
                     }
             });
 
         });
-
-
 
 }
 
@@ -129,13 +122,6 @@ function disconnect(){
 }
 
 function sendPlaceShipTile(x, y){
-    console.log("sendPlaceShipTile" +
-    JSON.stringify({
-                            "fieldStatus": "SHIP_ALIVE",
-                            "type": shipsToPlace[whichShip].type,
-                            "length" : shipsToPlace[whichShip].length,
-                            "coords": "" + x + y
-                            }));
 
     client.send('/ws/shipPlacement', {}, JSON.stringify({
                         "fieldStatus": "SHIP_ALIVE",
@@ -157,29 +143,6 @@ function sendPlacementInfoToOpponent(shipName, whichOfAKind, isAllShipsPlaced){
                             "whichOfAKind": whichOfAKind,
                             "isAllShipsPlaced": isAllShipsPlaced
                             }));
-}
-
-function receiveChatMessage(payloadBody){
-
-    textOutput.value += payloadBody.username + ":" + payloadBody.message + "\n";
-    textOutput.scrollTop = textOutput.scrollHeight;
-}
-
-function appendCurrentTurnInfo(payloadBody){
-    textOutput.value += payloadBody.message + payloadBody.username + "\n";
-    textOutput.scrollTop = textOutput.scrollHeight;
-}
-
-function playerLeftInfo(payloadBody){
-    textOutput.value += payloadBody.username + " left\n";
-    textOutput.scrollTop = textOutput.scrollHeight;
-}
-
-function sendCurrentTurnInfo(){
-
-    client.send('/ws/sendCurrentTurn/' + gameId, {}, JSON.stringify({ messageType: "currentTurnInfo",
-                                                            username: "username",
-                                                            message: "Current turn: "}));
 }
 
 $('#chatInput').on('keypress', function(e){

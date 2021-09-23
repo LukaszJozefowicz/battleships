@@ -16,14 +16,14 @@
 
 <div class="container" th:replace="fragments/boards :: boards"></div>
 
-<div class="container">
+<div class="container during-game-info" id = "duringGameInfo">
 
     <div class="duringGameStaticInfo" id = "gameStaticInfo">
         <h4>Info:</h4>
         <table class = "staticInfo">
             <tr>
                 <td class = "infoColor" style="background-color: #0000cd;"></td>
-                <td class="bold"> - your ship afloat</td>
+                <td class="bold"> - ship afloat</td>
             </tr>
             <tr>
                 <td class = "infoColor" style="background-color: red;"></td>
@@ -44,30 +44,23 @@
         </table>
     </div>
 
-    <div class="duringGameLiveInfo floatLeft" id = "gameLiveInfo" style="visibility:hidden">
+    <div class="duringGameLiveInfo floatLeft" id = "gameLiveInfo" style="display:none">
         <table class="chat-table" align="right">
             <tbody class="chat-body"><tr><td>
                 <form id = "chatForm" name = "chatForm">
-            <textarea name = "chatOutput" id = "chatOutput" rows="10" cols="40" readonly align="right" form="chatForm">
-            </textarea>
+                    <textarea name = "chatOutput" id = "chatOutput" rows="10" cols="40" readonly align="right" form="chatForm">
+                    </textarea>
                     <textarea id = "chatInput" name = "chatInput" rows="2" cols="40" align="right" form="chatForm">
-            </textarea>
+                    </textarea>
                 </form>
             </td></tr></tbody>
         </table>
     </div>
     <br>
 </div>
-    <div class="btn-back">
-        <button id="backButton" class="menu-btn" onclick = "window.location.href='/gameLobby'">Back to lobby</button>
+    <div class="btn-back" id="backToLobby">
+        <button class="menu-btn" onclick = "window.location.href='/gameLobby'">Back to lobby</button>
     </div>
-
-<!--    <div class="staticInfoRight"></div>-->
-
-<!--    <p style="display:none">-->
-<!--        Welcome <span id="currentUsername" sec:authentication="principal.username">User</span>-->
-<!--    </p>-->
-<!--</div>-->
 
 <script type="text/javascript" th:src="@{/webjars/jquery/3.6.0/jquery.min.js/}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/3.3.7/js/bootstrap.min.js}"></script>
@@ -75,8 +68,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js" integrity="sha512-iKDtgDyTHjAitUDdLljGhenhPwrbBfqTKWO1mkhSFH3A7blITC9MhYon6SjnMhp4o0rADGw9yAC6EW4t5a4K3g==" crossorigin="anonymous"></script>
 <script src="/js/webSocketNewGame.js" type="text/javascript"></script>
 <script src="/js/logoutTimeout.js" type="text/javascript"></script>
-<script src="/js/shipsSetupPhase.js" type="text/javascript"></script>
-<script src="/js/shootingPhase.js" type="text/javascript"></script>
+<script src="/js/gamePhaseShipsSetup.js" type="text/javascript"></script>
+<script src="/js/gamePhaseShooting.js" type="text/javascript"></script>
 </body>
 
 </html>

@@ -1,13 +1,7 @@
 var t;
 var currentCount = 600;
     function idleLogout() {
-        //window.onload = resetTimer;
-        //window.onmousemove = resetTimer;
-        //window.onmousedown = resetTimer; // catches touchscreen presses
-        window.onclick = resetTimer;     // catches touchpad clicks
-        //window.onscroll = resetTimer;    // catches scrolling with arrow keys
-        //window.onkeypress = resetTimer;
-
+        window.onclick = resetTimer;
 }
 
 function logout() {
@@ -19,7 +13,7 @@ function resetTimer() {
         console.log("reset timer function");
         currentCount = 600;
         clearTimeout(t);
-        t = setTimeout(logout, 600000);  // time is in milliseconds
+        t = setTimeout(logout, 600000);
 }
 
 setInterval(function(){

@@ -20,8 +20,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import java.lang.reflect.Type;
 import java.security.Principal;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Controller
@@ -65,15 +66,15 @@ public class GameLobbyController {
     @MessageMapping("/listOfUsers")
     @SendTo("/gameLobby")
     public String getListOfActiveUsers(){
-        List<String> loggedUsers = activeUsersList.getUsersList();
-        return new Gson().toJson(loggedUsers, List.class);
+        Set<String> loggedUsers = activeUsersList.getUsersList();
+        return new Gson().toJson(loggedUsers, Set.class);
     }
 
     @MessageMapping("/userLeft")
     @SendTo("/gameLobby")
     public String sendUsersListAfterUserLeft(String jsonList){
-        Type listType = new TypeToken<ArrayList<String>>(){}.getType();
-        List<String> listFromJson = new Gson().fromJson(jsonList, listType);
+        Type listType = new TypeToken<HashSet<String>>(){}.getType();
+        Set<String> listFromJson = new Gson().fromJson(jsonList, listType);
 
         activeUsersList.setUsersList(listFromJson);
         return jsonList;
@@ -123,51 +124,40 @@ public class GameLobbyController {
     public String deleteGameOrUserJoinedAfterUserLeft(Principal principal){
 
         //delete game created by user once he left the lobby
-//        Game createdGame = gameService.findGameByPlayer1Username(principal.getName());
-//
-//        if(createdGame != null) {
-//            if(!createdGame.getGameState().equals(GameState.IN_GAME)) {
-//                gameService.deleteGame(createdGame.getId());
-//            }
-//            activeGamesList.getGamesList().remove(dtoMapper.mapToGameDto(createdGame));
-//        }
-        System.out.println("activeGamesList before: " + activeGamesList.getGamesList());
         gameService.findGameByPlayer1UsernameNotInGame(principal.getName()).ifPresent(createdGame -> {
             gameService.deleteGame(createdGame.getId());
             activeGamesList.getGamesList().remove(dtoMapper.mapToGameDto(createdGame));
         });
 
-        //remove user if he was present in active games as player2 (joined), once he left the lobby
+        //remove user if he was present in active game as player2 (joined), once he left the lobby
         gameService.findGameByPlayer2UsernameNotInGame(principal.getName()).ifPresent(possibleGameJoined -> {
             final Long boardIdToDelete = possibleGameJoined.getSecondPlayerBoard().getId();
             possibleGameJoined.setPlayer2(null);
             possibleGameJoined.setSecondPlayerBoard(null);
-            possibleGameJoined.setGameState(GameState.WAITING_FOR_PLAYERS);
+            possibleGameJoined.setGameState(GameState.WAITING_FOR_PLAYER);
 
-            gameService.updateGameState(possibleGameJoined);
+            gameService.updateGameData(possibleGameJoined);
             boardService.deleteBoard(boardIdToDelete);
 
-            setPlayerJoinedInfoInActiveGamesList(possibleGameJoined.getId(), "waiting for player", GameState.WAITING_FOR_PLAYERS);
+            setPlayerJoinedInfoInActiveGamesList(possibleGameJoined.getId(), "waiting for player", GameState.WAITING_FOR_PLAYER);
         });
 
-        System.out.println("activeGamesList after: " + activeGamesList.getGamesList());
         return new Gson().toJson(activeGamesList.getGamesList(), List.class);
     }
 
 
     @MessageMapping("/newGame/redirect")
-    //@SendToUser("/queue/notify")
     public void notifyUserNewGameStarted(String msg){
         GameDto gameToStart = new Gson().fromJson(msg, GameDto.class);
 
-        Game game = gameService.findGameById(gameToStart.getId()).orElse(null);
-        game.setGameState(GameState.IN_GAME);
-        gameService.updateGameState(game);
+        gameService.findGameById(gameToStart.getId()).ifPresent(game -> {
+            game.setGameState(GameState.GAME_IN_PROGRESS);
+            gameService.updateGameData(game);
+        });
 
         int index = activeGamesList.getGamesList().indexOf(gameToStart);
-        activeGamesList.getGamesList().get(index).setGameState(GameState.IN_GAME.name());
+        activeGamesList.getGamesList().get(index).setGameState(GameState.GAME_IN_PROGRESS.name());
 
-        //System.out.println("game to start: " + gameToStart);
         messagingTemplate.convertAndSendToUser(gameToStart.getPlayer2(), "/queue/notify", msg);
         messagingTemplate.convertAndSendToUser(gameToStart.getPlayer1(), "/queue/notify", msg);
     }

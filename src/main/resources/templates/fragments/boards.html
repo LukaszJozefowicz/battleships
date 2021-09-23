@@ -23,7 +23,8 @@
         <tbody th:object="${counter}">
         <tr class = "gridRow" th:each="row, i : ${board}">
             <td class="bold counterCell" th:text="${counter.increment()}"></td>
-            <td class="dataCell" th:each="field : ${board[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:id="|${field.getX()}${field.getY()}|" th:onclick="|sendPlaceShipTile(${field.getX()}, ${field.getY()}); setShip(this)|"></td>
+<!--            <td class="dataCell" th:each="field : ${board[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:id="|${field.getX()}${field.getY()}|" th:onclick="|sendPlaceShipTile(${field.getX()}, ${field.getY()}); setShip(this)|"></td>-->
+            <td class="dataCell" th:each="field, j : ${board[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:id="|${i.index}${j.index}|" th:onclick="|sendPlaceShipTile(${i.index}, ${j.index}); setShip(this)|"></td>
         </tr>
         </tbody>
     </table>
@@ -56,16 +57,18 @@
         <tbody th:object="${counterOpponent}">
         <tr class = "gridRow" th:each="row, i : ${opponentBoard}">
             <td class="bold counterCell" th:text="${counterOpponent.increment()}"></td>
-            <td class="dataCell" th:each="field : ${opponentBoard[i.index]}"><input type="button" fieldstatus="empty" class="opp-btn" th:id="|${field.getX()}${field.getY()}opp|" th:onclick="|sendShotInfo(${field.getX()}, ${field.getY()});|" disabled></td>
+<!--            <td class="dataCell" th:each="field : ${opponentBoard[i.index]}"><input type="button" fieldstatus="empty" class="opp-btn" th:id="|${field.getX()}${field.getY()}opp|" th:onclick="|sendShotInfo(${field.getX()}, ${field.getY()});|" disabled></td>-->
+            <td class="dataCell" th:each="field, j : ${opponentBoard[i.index]}"><input type="button" fieldstatus="empty" class="opp-btn" th:id="|${i.index}${j.index}opp|" th:onclick="|sendShotInfo(${i.index}, ${j.index});|" disabled></td>
         </tr>
         </tbody>
     </table>
-    <h5 id="opponentShipPlacingInfo" class="red" th:object="${gameId}">Opponent is placing his ships</h5>
+<!--    <h5 id="opponentShipPlacingInfo" class="red" th:object="${gameId}">Opponent is placing his ships</h5>-->
+        <h5 id="opponentShipPlacingInfo" class="red">Opponent is placing his ships</h5>
     </div>
 
     <br>
 
-<!--    Global vars for shootingPhase.js    -->
+<!--    Global vars for .js scripts   -->
     <script th:inline="javascript">
         var shipsToPlace = JSON.parse([[${shipsToPlace}]]);
         var startingPlayer = [[${startingPlayer}]];

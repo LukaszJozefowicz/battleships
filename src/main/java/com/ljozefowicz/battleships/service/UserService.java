@@ -9,6 +9,4 @@ public interface UserService{
 
     User findByUsername(String username);
 
-    boolean checkCredentials(String login, String password);
-
 }

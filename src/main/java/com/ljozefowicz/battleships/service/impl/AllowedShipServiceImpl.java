@@ -15,8 +15,8 @@ import java.util.List;
 @AllArgsConstructor
 public class AllowedShipServiceImpl implements AllowedShipService {
 
-    private AllowedShipRepository allowedShipRepository;
-    private DtoMapper dtoMapper;
+    private final AllowedShipRepository allowedShipRepository;
+    private final DtoMapper dtoMapper;
 
     @Override
     public List<ShipToPlaceDto> getListOfShipsToPlace() {

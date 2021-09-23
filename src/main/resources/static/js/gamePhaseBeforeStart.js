@@ -62,7 +62,7 @@ function generateGamesTable(){
                     setInputFieldProperties(input, 'hidden', '', '', "");
 
                     switch (activeGamesList[i].gameState){
-                        case "WAITING_FOR_PLAYERS":
+                        case "WAITING_FOR_PLAYER":
                             setPlayerCanLeaveGame(activeGamesList[i].player1, input);
                             setPlayerCanJoinGame(activeGamesList[i].id, input);
                             break;
@@ -70,7 +70,7 @@ function generateGamesTable(){
                             setPlayerCanStartGame(activeGamesList[i], input);
                             setPlayerCanLeaveGame(activeGamesList[i].player2, input);
                             break;
-                        case "IN_GAME":
+                        case "GAME_IN_PROGRESS":
                             setGameInProgressInfo(input);
                             break;
 

@@ -9,8 +9,8 @@
 <nav th:replace="fragments/menu :: menu-bar"></nav>
 
 <br><br><br><br>
-<div class="container block-normal">
-    <div class="container block-in">
+<div class="block-normal">
+    <div class="block-in">
         <h3 style="text-align: center;">ONLINE LOBBY</h3>
         <br/>
         <h3 id="availableGames">Available games:</h3>
@@ -34,11 +34,11 @@
         </table>
         <br>
         <button id="createNewGame" type="button" class="bold" onclick="createNewGame()">Create new game</button>
-        <button id="send" type="button" class="bold" th:object="${createdGame}" onclick="usun()" th:style="${createdGame} == null ? 'visibility:visible' : 'visibility:hidden'">send</button>
-        <button id="disconnect" type="button" class="bold" th:object="${createdGame}" onclick="disconnect()" th:style="${createdGame} == null ? 'visibility:visible' : 'visibility:hidden'">disconnect</button>
+<!--        <button id="send" type="button" class="bold" th:object="${createdGame}" onclick="usun()" th:style="${createdGame} == null ? 'visibility:visible' : 'visibility:hidden'">send</button>-->
+<!--        <button id="disconnect" type="button" class="bold" th:object="${createdGame}" onclick="disconnect()" th:style="${createdGame} == null ? 'visibility:visible' : 'visibility:hidden'">disconnect</button>-->
     </div>
 
-    <div class="container block-right">
+    <div class="block-right">
 
         <table class="users-online" id="users-online" th:object="${loggedUsers}" align="right">
             <thead>
@@ -47,7 +47,6 @@
                 </tr>
             </thead>
             <tbody id="users-online-tbody">
-<!--            <tr><td></td></tr>-->
             </tbody>
         </table>
 
@@ -74,7 +73,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.js" integrity="sha512-lyIq9fRcCeSCXhp41XC/250UBmypAHV8KW+AhLcSEIksWHBfhzub6XXwDe67wTpOG8zrO2NAU/TYmEaCW+aQSg==" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js" integrity="sha512-iKDtgDyTHjAitUDdLljGhenhPwrbBfqTKWO1mkhSFH3A7blITC9MhYon6SjnMhp4o0rADGw9yAC6EW4t5a4K3g==" crossorigin="anonymous"></script>
 <script src="/js/webSocketGameLobby.js" type="text/javascript"></script>
-<script src="/js/beforeGameStartPhase.js" type="text/javascript"></script>
+<script src="/js/gamePhaseBeforeStart.js" type="text/javascript"></script>
 <script src="/js/gameStartCounter.js" type="text/javascript"></script>
 <script src="/js/logoutTimeout.js" type="text/javascript"></script>
 
