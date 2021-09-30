@@ -46,6 +46,25 @@ public class GameServiceImpl implements GameService {
 
     @Override
     @Transactional
+    public Game createNewGameVsPC(String username) {
+
+        User currentUser = userService.findByUsername(username);
+        User computerPlayer = userService.findByUsername("ComputerEasy");
+        Game newGame = Game.builder()
+                .player1(currentUser)
+                .player2(computerPlayer)
+                .firstPlayerBoard(boardService.initializeBoard())
+                .secondPlayerBoard(boardService.initializeComputerBoard())
+                .gameState(GameState.GAME_IN_PROGRESS)
+                .playerTurn(GameTurn.PLAYER1)
+                //.playerTurn(new Random().nextBoolean() ? GameTurn.PLAYER1 : GameTurn.PLAYER2)
+                .build();
+
+        return gameRepository.save(newGame);
+    }
+
+    @Override
+    @Transactional
     public Game updateGameData(Game game) {
         return gameRepository.save(game);
     }

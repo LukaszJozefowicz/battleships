@@ -1,8 +1,3 @@
-//var areYouReady = false;
-//var isOpponentReady = false;
-//var whichShip = 0;
-//var whichFieldOfShip  = 1;
-//var shipsToPlace = JSON.parse([[${shipsToPlace}]]);
 //global vars declared in boards.html th:inline script
 
 function resetBoard(){
@@ -87,6 +82,7 @@ function setPlacementInfoText(shipCount){
 }
 
 function setShip(that){
+
         setShipPlacementInfo();
         that.style.backgroundColor = "#0000cd"; //ship placed color
         that.disabled=true;
@@ -101,8 +97,10 @@ function setShip(that){
         if(whichShip === shipsToPlace.length){
             disableAllFields();
             setUpForGameStart();
-            if(isOpponentReady)
+            if(isOpponentReady || isGameVsPC)
                 startShootingPhase();
+//            if(shipsToPlacePC !== undefined)
+//                setComputerPlayerShips();
         }
 }
 

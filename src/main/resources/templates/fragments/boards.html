@@ -70,12 +70,19 @@
 
 <!--    Global vars for .js scripts   -->
     <script th:inline="javascript">
+        var gameId = [[${gameId}]]
         var shipsToPlace = JSON.parse([[${shipsToPlace}]]);
         var startingPlayer = [[${startingPlayer}]];
         var areYouReady = false;
         var isOpponentReady = false;
         var whichShip = 0;
         var whichFieldOfShip  = 1;
+
+        var boardPC = [[${opponentBoard}]];
+        var isGameVsPC = false;
+
+        var shipsToPlacePC = JSON.parse([[${shipsToPlacePC}]]);
+
     </script>
 </div>
 </html>

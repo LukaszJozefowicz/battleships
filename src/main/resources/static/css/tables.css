@@ -1,13 +1,3 @@
-
-
-html, body {
-    height:100%;
-    background-image: url("../pictures/battleship-background.jpg");
-    background-size: cover;
-    background-position: center center;
-    background-repeat: no-repeat;
-}
-
 table.boardTable {
        border-spacing: 0;
        border: 1px solid black;

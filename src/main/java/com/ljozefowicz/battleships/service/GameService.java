@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface GameService {
     Game createNewGame(String username);
-
+    Game createNewGameVsPC(String username);
     void deleteGame(Long id);
     Optional<Game> findGameByPlayer1UsernameNotInGame(String username);
     Optional<Game> findGameByPlayer2UsernameNotInGame(String username);

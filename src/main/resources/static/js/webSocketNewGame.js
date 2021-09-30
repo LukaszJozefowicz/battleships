@@ -1,7 +1,11 @@
 var socket = null;
 var client = null;
 var currentURL = window.location.href;
-var gameId = currentURL.substring(currentURL.indexOf("newGame/") + 8)
+console.log(currentURL);
+console.log(currentURL.substring(currentURL.indexOf("/newGame") + 8, currentURL.indexOf("/newGame") + 9));
+//        if(currentURL.substring(currentURL.indexOf("newGame/") + 8, currentURL.indexOf("newGame/") + 9) === "V")
+//            gameId = JSON.parse([[${gameId}]]);
+//var gameId = currentURL.substring(currentURL.indexOf("newGame/") + 8)
 var chatText = "";
 var textOutput = document.getElementById("chatOutput");
 let authenticatedUserTag = document.getElementById("currentUsername");
@@ -17,6 +21,12 @@ window.onload = () => {
     document.getElementById("chatOutput").value = "";
     document.getElementById("backToMenu").style.display = "none";
     document.getElementById("backToLobby").style.display = "none";
+    if(shipsToPlacePC !== undefined){
+                        isGameVsPC = true;
+                        document.getElementById("opponentShipPlacingInfo").innerHTML = "Computer player is ready";
+                        setComputerPlayerShips();
+    }
+
 }
 window.onbeforeunload = () => {
     disconnect();
@@ -167,6 +177,25 @@ function sendShotInfo(x, y){
 
                         currentPlayer: "currentPlayer",
                         opponentPlayer: "opponentPlayer",
+                        shotResult: "shotResult",
+                        coords: "" + x + y
+                        }));
+    if(isGameVsPC){
+        client.send('/ws/shoot/' + gameId, {}, JSON.stringify({
+
+                            currentPlayer: "currentPlayer",
+                            opponentPlayer: "opponentPlayer",
+                            shotResult: "shotResult",
+                            coords: "" + x + y
+                            }));
+    }
+}
+
+function sendShotInfoPC(x, y){
+    client.send('/ws/shoot/' + gameId, {}, JSON.stringify({
+
+                        currentPlayer: "player",
+                        opponentPlayer: "Computer",
                         shotResult: "shotResult",
                         coords: "" + x + y
                         }));

@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface AllowedShipService {
     List<ShipToPlaceDto> getListOfShipsToPlace();
+//    int countAllowedShipsTotalTiles(List<ShipToPlaceDto> shipsToPlace);
 }
