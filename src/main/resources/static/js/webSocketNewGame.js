@@ -1,11 +1,8 @@
 var socket = null;
 var client = null;
 var currentURL = window.location.href;
-console.log(currentURL);
-console.log(currentURL.substring(currentURL.indexOf("/newGame") + 8, currentURL.indexOf("/newGame") + 9));
-//        if(currentURL.substring(currentURL.indexOf("newGame/") + 8, currentURL.indexOf("newGame/") + 9) === "V")
-//            gameId = JSON.parse([[${gameId}]]);
-//var gameId = currentURL.substring(currentURL.indexOf("newGame/") + 8)
+var isGameVsPcEnded = false;
+
 var chatText = "";
 var textOutput = document.getElementById("chatOutput");
 let authenticatedUserTag = document.getElementById("currentUsername");
@@ -21,10 +18,10 @@ window.onload = () => {
     document.getElementById("chatOutput").value = "";
     document.getElementById("backToMenu").style.display = "none";
     document.getElementById("backToLobby").style.display = "none";
-    if(shipsToPlacePC !== undefined){
-                        isGameVsPC = true;
-                        document.getElementById("opponentShipPlacingInfo").innerHTML = "Computer player is ready";
-                        setComputerPlayerShips();
+    if(isGameVsPC){
+        document.getElementById("opponentShipPlacingInfo").innerHTML = "Computer player is ready";
+        setComputerPlayerShips();
+        setClickActionComputerShoot();
     }
 
 }
@@ -82,35 +79,43 @@ function connect(){
                     }
             });
 
-            client.subscribe("/newGame/" + gameId + "/shoot", payload => {
+            client.subscribe("/user/queue/newGame/" + gameId + "/shoot", payload => {
                     payloadBody = JSON.parse(payload.body);
 
-                    shoot(payloadBody);
+                    console.log("current player in SHOOT subscribe kłełełe: " + payloadBody.currentPlayer);
+                        shoot(payloadBody);
 
-                    let row = parseInt(String.fromCharCode(parseInt(payloadBody.coords.substring(0,1)) + 48)) + 1;  // 1-10
-                    let col = String.fromCharCode(parseInt(payloadBody.coords.substring(1,2)) + 65);                // A-J
-                    let shotResultInfo = payloadBody.currentPlayer + " shot: " + col + row + "\n";
+                        let row = parseInt(String.fromCharCode(parseInt(payloadBody.coords.substring(0,1)) + 48)) + 1;  // 1-10
+                        let col = String.fromCharCode(parseInt(payloadBody.coords.substring(1,2)) + 65);                // A-J
+                        let shotResultInfo = payloadBody.currentPlayer + " shot: " + col + row + "\n";
 
-                    switch(payloadBody.shotResult){
-                            case "SHIP_HIT":
-                                shotResultInfo += payloadBody.opponentPlayer + "'s ship is hit!";
-                                break;
-                            case "SHIP_SUNK":
-                                shotResultInfo += payloadBody.opponentPlayer + "'s ship is hit and sunk!";
-                                break;
-                            case "MISS":
-                                shotResultInfo += payloadBody.currentPlayer + " missed!";
-                                break;
-                    }
-                    if(payloadBody.allShipsSunk === false){
-                        appendCurrentTurnInfo({username: payloadBody.opponentPlayer,        //th:inline in boards.html
-                        message: shotResultInfo + "\n\nCurrent turn: "});
-                    } else if(payloadBody.allShipsSunk === true){
-                        textOutput.value += "All " + payloadBody.opponentPlayer + "'s ships are sunk\n"
-                                       + payloadBody.currentPlayer + " won!!\n";
-                        textOutput.scrollTop = textOutput.scrollHeight;
-                        document.getElementById("backToLobby").style.display = "flex";
-                    }
+                        switch(payloadBody.shotResult){
+                                case "SHIP_HIT":
+                                    shotResultInfo += payloadBody.opponentPlayer + "'s ship is hit!";
+                                    break;
+                                case "SHIP_SUNK":
+                                    shotResultInfo += payloadBody.opponentPlayer + "'s ship is hit and sunk!";
+                                    break;
+                                case "MISS":
+                                    shotResultInfo += payloadBody.currentPlayer + " missed!";
+                                    break;
+                        }
+                        if(payloadBody.allShipsSunk === false){
+                            appendCurrentTurnInfo({username: payloadBody.opponentPlayer,        //th:inline in boards.html
+                            message: shotResultInfo + "\n\nCurrent turn: "});
+                        } else if(payloadBody.allShipsSunk === true){
+
+                            if (isGameVsPC) isGameVsPcEnded = true;
+
+                            textOutput.value += "All " + payloadBody.opponentPlayer + "'s ships are sunk\n"
+                                           + payloadBody.currentPlayer + " won!!\n";
+                            textOutput.scrollTop = textOutput.scrollHeight;
+                            document.getElementById("backToLobby").style.display = "flex";
+                        }
+
+                        if(payloadBody.currentPlayer === "ComputerEasy" && !isGameVsPcEnded)
+                            setOpponentEmptyCellsActive();
+                        console.log("end of SHOOT subscribe");
             });
 
         });
@@ -173,14 +178,8 @@ $('#chatInput').on('keypress', function(e){
 });
 
 function sendShotInfo(x, y){
-    client.send('/ws/shoot/' + gameId, {}, JSON.stringify({
-
-                        currentPlayer: "currentPlayer",
-                        opponentPlayer: "opponentPlayer",
-                        shotResult: "shotResult",
-                        coords: "" + x + y
-                        }));
-    if(isGameVsPC){
+    //console.log("Is game vs pc ended: " + isGameVsPcEnded);
+    if(!isGameVsPcEnded){
         client.send('/ws/shoot/' + gameId, {}, JSON.stringify({
 
                             currentPlayer: "currentPlayer",
@@ -191,12 +190,22 @@ function sendShotInfo(x, y){
     }
 }
 
-function sendShotInfoPC(x, y){
+/*function sendShotInfo2(){
+    //console.log("Is game vs pc ended2: " + isGameVsPcEnded);
+    if(!isGameVsPcEnded){
+
     client.send('/ws/shoot/' + gameId, {}, JSON.stringify({
 
-                        currentPlayer: "player",
+                        currentPlayer: "currentPlayer",
                         opponentPlayer: "Computer",
                         shotResult: "shotResult",
-                        coords: "" + x + y
+                        coords: "random"
                         }));
+    }
+}*/
+
+function sendShotInfoPC(x, y){
+    sendShotInfo(x, y);
+    setTimeout(sendShotInfo, 500, x, y);
+
 }

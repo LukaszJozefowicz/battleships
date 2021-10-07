@@ -3,6 +3,7 @@ package com.ljozefowicz.battleships.config;
 import com.ljozefowicz.battleships.dto.mapper.DtoMapper;
 import com.ljozefowicz.battleships.model.beans.ActiveUsersList;
 import com.ljozefowicz.battleships.model.beans.ActiveGamesList;
+import com.ljozefowicz.battleships.model.beans.PcShipsToAddToDB;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -23,6 +24,9 @@ public class AppConfig {
     public ActiveGamesList gamesList(){
         return new ActiveGamesList();
     }
+
+    @Bean
+    public PcShipsToAddToDB pcShipsToAddToDB() { return new PcShipsToAddToDB(); }
 
 //    @Bean
 //    public ClassLoaderTemplateResolver secondaryTemplateResolver() {

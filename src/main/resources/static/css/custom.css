@@ -121,6 +121,8 @@ h1 {
     margin-right: 10px;
     font-size: 3em;
     font-weight: bold;
+    min-width: 25%;
+    max-width: 25%;
 }
 
 .footer {

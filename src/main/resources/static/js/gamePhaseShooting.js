@@ -20,13 +20,14 @@ function startShootingPhase(){
             setCellActive(cell);
         });
     }
+    if(startingPlayer === "ComputerEasy"){
+        setTimeout(sendShotInfo, 2000, "randomX", "randomY");
+    }
 }
 
 function shoot(payloadBody){
-
     let tileHit;
     let cells;
-
     if(payloadBody.currentPlayer === authenticatedUserName){
         cells = document.querySelectorAll(".opp-btn");
         tileHit = document.querySelector("#" + CSS.escape(payloadBody.coords) + "opp");
@@ -79,10 +80,11 @@ function shoot(payloadBody){
 
 function setCellActive(cell){
     $(cell).on({
+                    //mouseenter: function() {
                     mouseenter: function() {
 
                         if($(cell).attr('fieldstatus') == 'empty' && $(cell).is(':enabled')){
-                                this.style.backgroundColor = "#1e90ff";     //highlighted
+                                //this.style.backgroundColor = "#1e90ff";     //highlighted
                                 this.style.cursor = "pointer";
                         }
                     },
@@ -99,6 +101,14 @@ function setOpponentBoardInactive(){
     let opponentCells = document.querySelectorAll(".opp-btn");
     opponentCells.forEach(function(cell){
         cell.disabled = true;
+    });
+}
+
+function setOpponentEmptyCellsActive(){
+    let opponentCells = document.querySelectorAll(".opp-btn");
+    opponentCells.forEach(function(cell){
+        if(cell.getAttribute('fieldstatus') === "empty")
+            cell.disabled = false;
     });
 }
 

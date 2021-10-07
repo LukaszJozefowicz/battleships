@@ -1,4 +1,4 @@
-package com.ljozefowicz.battleships.dto;
+package com.ljozefowicz.battleships.stompMessageObj;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @Builder
-public class ShipPlacementInfoDto {
+public class ShipPlacementInfo {
     private String fieldStatus;
     private String type;
     private int length;

@@ -3,12 +3,11 @@ package com.ljozefowicz.battleships.controller;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.ljozefowicz.battleships.dto.GameDto;
-import com.ljozefowicz.battleships.dto.MessageDto;
+import com.ljozefowicz.battleships.stompMessageObj.Message;
 import com.ljozefowicz.battleships.dto.mapper.DtoMapper;
 import com.ljozefowicz.battleships.enums.GameState;
 import com.ljozefowicz.battleships.model.beans.ActiveUsersList;
 import com.ljozefowicz.battleships.model.beans.ActiveGamesList;
-import com.ljozefowicz.battleships.model.entity.Game;
 import com.ljozefowicz.battleships.service.BoardService;
 import com.ljozefowicz.battleships.service.GameService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -82,8 +81,8 @@ public class GameLobbyController {
 
     @MessageMapping("/sendToChat")
     @SendTo("/gameLobby")
-    public MessageDto sendChatMessage(MessageDto messageObj){
-        return MessageDto.builder()
+    public Message sendChatMessage(Message messageObj){
+        return Message.builder()
                 .messageType(messageObj.getMessageType())
                 .username(messageObj.getUsername())
                 .message(messageObj.getMessage())
@@ -100,12 +99,26 @@ public class GameLobbyController {
     @MessageMapping("/newGame")
     @SendTo("/gameLobby")
     public String createNewGame(Principal principal){
-        Game newGame = gameService.createNewGame(principal.getName());
-        GameDto newGameDto = dtoMapper.mapToGameDto(newGame);
-        activeGamesList.getGamesList().add(newGameDto);
+        GameDto newGame = gameService.createNewGame(principal.getName());
+        //GameDto newGameDto = dtoMapper.mapToGameDto(newGame);
+        activeGamesList.getGamesList().add(newGame);
 
         return new Gson().toJson(activeGamesList.getGamesList(), List.class);
     }
+
+    //----------------
+
+    @MessageMapping("/newGameVsPC")
+    @SendTo("/gameLobby")
+    public String createNewGameVsPC(Principal principal){
+        GameDto newGame = gameService.createNewGameVsPC(principal.getName());
+//        GameDto newGameDto = dtoMapper.mapToGameDto(newGame);
+        activeGamesList.getGamesList().add(newGame);
+
+        return new Gson().toJson(activeGamesList.getGamesList(), List.class);
+    }
+
+    //----------------
 
     @MessageMapping("/joinGame/{gameId}")
     @SendTo("/gameLobby")

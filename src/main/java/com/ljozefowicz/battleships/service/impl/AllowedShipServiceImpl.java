@@ -22,9 +22,9 @@ public class AllowedShipServiceImpl implements AllowedShipService {
     public List<ShipToPlaceDto> getListOfShipsToPlace() {
 
         List<ShipToPlaceDto> resultList = new ArrayList<>();
-        List<AllowedShip> listFromDb = allowedShipRepository.findAll();
+        List<AllowedShip> allowedShipsFromDb = allowedShipRepository.findAll();
 
-        for(AllowedShip allowedShip : listFromDb){
+        for(AllowedShip allowedShip : allowedShipsFromDb){
             for (int i = 0; i < allowedShip.getNumberOfAllowed(); i++) {
                 resultList.add(dtoMapper.mapToShipToPlaceDto(allowedShip, i+1));
             }

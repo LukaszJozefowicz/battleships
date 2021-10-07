@@ -6,9 +6,10 @@ public enum FieldStatus {
     SHIP_HIT,
     SHIP_SUNK,
     MISS,
-    AROUND_PLACED_SHIP;
+    AROUND_SHIP,
+    AROUND_SUNK;
 
     public static FieldStatus setEmptyIfAroundShip(FieldStatus fieldStatus){
-        return fieldStatus == FieldStatus.AROUND_PLACED_SHIP ? FieldStatus.EMPTY : fieldStatus;
+        return fieldStatus == FieldStatus.AROUND_SHIP ? FieldStatus.EMPTY : fieldStatus;
     }
 }

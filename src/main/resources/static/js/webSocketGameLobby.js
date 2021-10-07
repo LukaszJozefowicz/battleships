@@ -34,7 +34,6 @@ function connect(){
                 payloadBody = JSON.parse(payload.body);
 
                 if(Array.isArray(payloadBody)
-//                   && payloadBody[0] === "usersList"){
                     && payloadBody.includes("usersList")){
                                 let usersTableBody = document.getElementById('users-online-tbody');
                                 usersTableBody.remove();
@@ -60,7 +59,7 @@ function connect(){
                         && payloadBody.player2 !== undefined
                         && payloadBody.gameState === "READY_TO_START"){
                         gameStartCountdown();
-                        setTimeout(redirectToNewGameScreen.bind(null, payloadBody.id), 5000);
+                        setTimeout(redirectToNewGameScreen.bind(null, payloadBody.id), 3000);
                    }
 
             });
@@ -104,6 +103,7 @@ function createNewGame(){
                 client.send('/ws/newGame', {}, JSON.stringify(
                 [{"id":0,"player1":"string","player2":"string","gameState":"string"}]));
                 document.getElementById('createNewGame').disabled = true;
+                document.getElementById('createNewGameVsPC').disabled = true;
 
 }
 
@@ -131,5 +131,15 @@ function newGameRedirect(payload){
                     "player1":payload.player1,
                     "player2":payload.player2,
                     "gameState":payload.gameState}));
+
+}
+
+// ---------- vs PC ----------
+
+function createNewGameVsPC(){
+                client.send('/ws/newGameVsPC', {}, JSON.stringify(
+                [{"id":0,"player1":"string","player2":"Computer","gameState":"string"}]));
+                document.getElementById('createNewGame').disabled = true;
+                document.getElementById('createNewGameVsPC').disabled = true;
 
 }

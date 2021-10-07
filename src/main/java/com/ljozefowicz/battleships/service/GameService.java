@@ -1,5 +1,6 @@
 package com.ljozefowicz.battleships.service;
 
+import com.ljozefowicz.battleships.dto.GameDto;
 import com.ljozefowicz.battleships.model.entity.Board;
 import com.ljozefowicz.battleships.model.entity.Game;
 
@@ -7,8 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface GameService {
-    Game createNewGame(String username);
-    Game createNewGameVsPC(String username);
+    GameDto createNewGame(String username);
+    GameDto createNewGameVsPC(String username);
     void deleteGame(Long id);
     Optional<Game> findGameByPlayer1UsernameNotInGame(String username);
     Optional<Game> findGameByPlayer2UsernameNotInGame(String username);

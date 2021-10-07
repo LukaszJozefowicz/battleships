@@ -42,10 +42,6 @@ function setShipPlacementInfo(){
 
         whichFieldOfShip++;
 
-//        console.log("which ship: " + whichShip);
-//        console.log("which field of ship: " + whichFieldOfShip);
-//        console.log("shipsToPlace length: " + shipsToPlace.length);
-
         setPlacementInfoText(whichShip);
 
         if(whichShip === shipsToPlace.length - 1 && whichFieldOfShip === currentShipLength + 1){
@@ -99,8 +95,6 @@ function setShip(that){
             setUpForGameStart();
             if(isOpponentReady || isGameVsPC)
                 startShootingPhase();
-//            if(shipsToPlacePC !== undefined)
-//                setComputerPlayerShips();
         }
 }
 

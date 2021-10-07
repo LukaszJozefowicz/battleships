@@ -1,4 +1,4 @@
-var gameStartCount = 5;
+var gameStartCount = 3;
 function gameStartCountdown(){
     let gameStartInfo = document.getElementById('gameStartInfo');
     gameStartInfo.style.visibility = "visible";
