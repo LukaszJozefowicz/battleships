@@ -100,7 +100,6 @@ public class GameLobbyController {
     @SendTo("/gameLobby")
     public String createNewGame(Principal principal){
         GameDto newGame = gameService.createNewGame(principal.getName());
-        //GameDto newGameDto = dtoMapper.mapToGameDto(newGame);
         activeGamesList.getGamesList().add(newGame);
 
         return new Gson().toJson(activeGamesList.getGamesList(), List.class);
@@ -112,7 +111,6 @@ public class GameLobbyController {
     @SendTo("/gameLobby")
     public String createNewGameVsPC(Principal principal){
         GameDto newGame = gameService.createNewGameVsPC(principal.getName());
-//        GameDto newGameDto = dtoMapper.mapToGameDto(newGame);
         activeGamesList.getGamesList().add(newGame);
 
         return new Gson().toJson(activeGamesList.getGamesList(), List.class);
@@ -136,7 +134,7 @@ public class GameLobbyController {
     @SendTo("/gameLobby")
     public String deleteGameOrUserJoinedAfterUserLeft(Principal principal){
 
-        //delete game created by user once he left the lobby
+        //delete game created by user once he left
         gameService.findGameByPlayer1UsernameNotInGame(principal.getName()).ifPresent(createdGame -> {
             gameService.deleteGame(createdGame.getId());
             activeGamesList.getGamesList().remove(dtoMapper.mapToGameDto(createdGame));

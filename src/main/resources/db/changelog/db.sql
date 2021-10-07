@@ -92,3 +92,8 @@ create table if not exists ships
 
 --changeset lukasz:11
 CREATE SEQUENCE IF NOT EXISTS ships_sequence OWNED BY ships.id;
+
+--changeset lukasz:12
+insert into roles (id, name) values(3, 'ROLE_BOT_EASY');
+insert into roles (id, name) values(4, 'ROLE_BOT_NORMAL');
+insert into roles (id, name) values(5, 'ROLE_BOT_HARD');

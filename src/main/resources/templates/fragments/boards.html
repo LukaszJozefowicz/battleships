@@ -77,7 +77,7 @@
 
         var boardPC = [[${opponentBoard}]];
         var opponentName = [[${opponentName}]];
-        var isGameVsPC = opponentName === "ComputerEasy";
+        var isGameVsPC = opponentName.includes("BotEasy") || opponentName.includes("BotNormal") || opponentName.includes("BotHard");
         console.log("is game vs PC: " + isGameVsPC);
 
     </script>

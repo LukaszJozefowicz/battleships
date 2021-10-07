@@ -1,6 +1,7 @@
 package com.ljozefowicz.battleships.service.impl;
 
 import com.google.gson.Gson;
+import com.ljozefowicz.battleships.dto.CurrentGameStateDto;
 import com.ljozefowicz.battleships.stompMessageObj.ShipPlacementInfo;
 import com.ljozefowicz.battleships.dto.ShipToPlaceDto;
 import com.ljozefowicz.battleships.enums.Direction;
@@ -14,6 +15,7 @@ import com.ljozefowicz.battleships.repository.BoardRepository;
 import com.ljozefowicz.battleships.repository.ShipRepository;
 import com.ljozefowicz.battleships.service.AllowedShipService;
 import com.ljozefowicz.battleships.service.BoardService;
+import com.ljozefowicz.battleships.stompMessageObj.ShotInfo;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -98,6 +100,7 @@ public class BoardServiceImpl implements BoardService{
 
         ShipUtils shipUtils = new ShipUtils();
         FieldStatus[][] fieldStatusArray = getBoardAsArray(board);
+        System.out.println(Arrays.deepToString(fieldStatusArray) + "\n coords:" + coords + "\nstatus: " + fieldStatusArray[getRow(coords)][getCol(coords)].name());
 
         switch (fieldStatusArray[getRow(coords)][getCol(coords)]) {
             case SHIP_ALIVE:
@@ -111,28 +114,30 @@ public class BoardServiceImpl implements BoardService{
     }
 
     @Override
-    public boolean checkIfAllShipsAreSunk(Long boardId){
-        return shipRepository.findAllByBoard_id(boardId)
-                .stream()
-                .allMatch(Ship::getIsDestroyed);
-    }
+    public ShotInfo setShotInfo(ShotInfo shotInfo, String shotResult, CurrentGameStateDto currentGameState){
 
-    @Override
-    public String getFieldsOfShipByCoords(Board board, String coords){
-        Ship ship = shipRepository.findByBoard_idAndFieldsLike(board.getId(), "%" + coords + "%")
-                .orElseThrow(() -> new EntityNotFoundException("Ship with coords: " + coords + "not found in db"));
-        return ship.getFields();
-    }
+        ShipUtils shipUtils = new ShipUtils();
+        String sunkShipCoords = "";
+        String shipFieldsToReveal = "";
+        boolean isAllShipsSunk = false;
 
-    @Override
-    public String getShipFieldsToReveal(Long boardId){
-        List<Ship> ships = shipRepository.findAllByBoard_id(boardId);
-        String[] fieldsToReveal = ships.stream()
-                .filter(s -> !s.getIsDestroyed())
-                .flatMap(ship -> Arrays.stream(new Gson().fromJson(ship.getFields(), String[].class)))
-                .toArray(String[]::new);
+        if(shotResult.equals(FieldStatus.SHIP_SUNK.name())){
+            sunkShipCoords = shipUtils.getFieldsOfShipByCoords(currentGameState.getOpponentPlayerBoard(), shotInfo.getCoords());
+            isAllShipsSunk = shipUtils.checkIfAllShipsAreSunk(currentGameState.getOpponentPlayerBoard().getId());
+            if(isAllShipsSunk) {
+                shipFieldsToReveal = shipUtils.getShipFieldsToReveal(currentGameState.getCurrentPlayerBoard().getId());
+            }
+        }
 
-        return new Gson().toJson(fieldsToReveal);
+        return ShotInfo.builder()
+                .currentPlayer(currentGameState.getCurrentPlayer())
+                .opponentPlayer(currentGameState.getOpponentPlayer())
+                .shotResult(shotResult)
+                .coords(shotInfo.getCoords())
+                .sunkShipCoords(sunkShipCoords)
+                .isAllShipsSunk(isAllShipsSunk)
+                .shipFieldsToReveal(shipFieldsToReveal)
+                .build();
     }
 
     // ----------------- Board for computer player -----------------
@@ -147,7 +152,6 @@ public class BoardServiceImpl implements BoardService{
 
         while(retry < 20 && fieldStatusArray.length != 10) {    // 20 tries should be enough and not affect performance much
             fieldStatusArray = boardArrayUtils.initializeComputerBoardArray();
-            //System.out.println("retry " + retry + " arrayLength: " + fieldStatusArray.length);
             retry++;
         }
 
@@ -256,6 +260,8 @@ public class BoardServiceImpl implements BoardService{
             }
         }
     }
+
+    // ------------------ BoardArrayUtils inner class ------------------
 
     private class BoardArrayUtils {
 
@@ -374,6 +380,8 @@ public class BoardServiceImpl implements BoardService{
         }
     }
 
+    // ------------------ ShipUtils inner class ------------------
+
     private class ShipUtils {
 
         private boolean isAllShipFieldsSet(String[] fields){
@@ -406,7 +414,6 @@ public class BoardServiceImpl implements BoardService{
             listOfShips.get(listOfShips.size() - 1).setFields(new Gson().toJson(fields));
         }
 
-        @Transactional
         private FieldStatus checkIfShipIsSunk(Board board, String coords){
 
             Ship ship = shipRepository.findByBoard_idAndFieldsLike(board.getId(), "%" + coords + "%")
@@ -443,6 +450,28 @@ public class BoardServiceImpl implements BoardService{
                     }
                 }
             }
+        }
+
+        private String getFieldsOfShipByCoords(Board board, String coords){
+            Ship ship = shipRepository.findByBoard_idAndFieldsLike(board.getId(), "%" + coords + "%")
+                    .orElseThrow(() -> new EntityNotFoundException("Ship with coords: " + coords + "not found in db"));
+            return ship.getFields();
+        }
+
+        private boolean checkIfAllShipsAreSunk(Long boardId){
+            return shipRepository.findAllByBoard_id(boardId)
+                    .stream()
+                    .allMatch(Ship::getIsDestroyed);
+        }
+
+        private String getShipFieldsToReveal(Long boardId){
+            List<Ship> ships = shipRepository.findAllByBoard_id(boardId);
+            String[] fieldsToReveal = ships.stream()
+                    .filter(s -> !s.getIsDestroyed())
+                    .flatMap(ship -> Arrays.stream(new Gson().fromJson(ship.getFields(), String[].class)))
+                    .toArray(String[]::new);
+
+            return new Gson().toJson(fieldsToReveal);
         }
     }
 

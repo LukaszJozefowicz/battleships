@@ -1,6 +1,7 @@
 package com.ljozefowicz.battleships.validator;
 
 import com.ljozefowicz.battleships.dto.UserRegistrationDto;
+import com.ljozefowicz.battleships.enums.UserRole;
 import com.ljozefowicz.battleships.model.entity.User;
 import com.ljozefowicz.battleships.service.UserService;
 import lombok.AllArgsConstructor;
@@ -27,12 +28,14 @@ public class UserValidator implements Validator {
         UserRegistrationDto user = (UserRegistrationDto) o;
 
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "username", "NotEmpty");
-        if (user.getUsername().length() < 4 || user.getUsername().length() > 32) {
+        if (user.getUsername().length() < 4 || user.getUsername().length() > 16) {
             errors.rejectValue("username", "Size.user.username");
         }
-        if (userService.findByUsername(user.getUsername()) != null) {
-            errors.rejectValue("username", "Duplicate.user.username");
+        if (UserRole.isBotName(user.getUsername())) {
+            errors.rejectValue("username", "Forbidden.user.username");
         }
+        userService.findByUsername(user.getUsername())
+                .ifPresent(u -> errors.rejectValue("username", "Duplicate.user.username"));
 
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "password", "NotEmpty");
         if (user.getPassword().length() < 8 || user.getPassword().length() > 32) {

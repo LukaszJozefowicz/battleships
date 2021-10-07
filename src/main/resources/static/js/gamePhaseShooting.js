@@ -20,7 +20,7 @@ function startShootingPhase(){
             setCellActive(cell);
         });
     }
-    if(startingPlayer === "ComputerEasy"){
+    if(startingPlayer.includes("BotEasy")){
         setTimeout(sendShotInfo, 2000, "randomX", "randomY");
     }
 }

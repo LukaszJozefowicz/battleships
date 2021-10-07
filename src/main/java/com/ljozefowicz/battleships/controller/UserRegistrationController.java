@@ -1,6 +1,7 @@
 package com.ljozefowicz.battleships.controller;
 
 import com.ljozefowicz.battleships.dto.UserRegistrationDto;
+import com.ljozefowicz.battleships.enums.UserRole;
 import com.ljozefowicz.battleships.service.UserService;
 import com.ljozefowicz.battleships.validator.UserValidator;
 import lombok.AllArgsConstructor;
@@ -45,7 +46,7 @@ public class UserRegistrationController {
         }
 
 
-        userService.saveUser(userRegistrationDto);
+        userService.saveUser(userRegistrationDto, UserRole.ROLE_USER);
         return "redirect:/register?success";
     }
 }

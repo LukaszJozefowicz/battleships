@@ -1,9 +1,11 @@
 package com.ljozefowicz.battleships.controller;
 
 import com.google.gson.Gson;
+import com.ljozefowicz.battleships.dto.CurrentGameStateDto;
 import com.ljozefowicz.battleships.dto.mapper.DtoMapper;
 import com.ljozefowicz.battleships.enums.FieldStatus;
 import com.ljozefowicz.battleships.enums.GameTurn;
+import com.ljozefowicz.battleships.enums.UserRole;
 import com.ljozefowicz.battleships.exception.EntityNotFoundException;
 import com.ljozefowicz.battleships.model.beans.ActiveGamesList;
 import com.ljozefowicz.battleships.model.entity.Board;
@@ -65,35 +67,6 @@ public class NewGameController {
         });
         return "new-game";
     }
-
-    /*@GetMapping("/newGameVsPC")
-    public String createNewGameVsPC(Model model, Principal principal){
-//        Game newGame = gameService.createNewGame(principal.getName());
-//        User computerPlayer = userService.saveUser(UserRegistrationDto.builder()
-//                .username("ComputerEasy")
-//                .password("qwerty")
-//                .confirmPassword("qwerty")
-//                .email("bot@bot.pl")
-//                .confirmEmail("bot@bot.pl")
-//                .build());
-
-//        User computerPlayer = userService.findByUsername("ComputerEasy");
-//        newGame = gameService.joinGameById(newGame.getId(), computerPlayer.getUsername());
-        Game newGame = gameService.createNewGameVsPC(principal.getName());
-
-        model.addAttribute("gameId", newGame.getId());
-        model.addAttribute("board", boardService.getBoardAsArray(newGame.getFirstPlayerBoard()));
-        model.addAttribute("opponentBoard", boardService.getBoardAsArray(newGame.getSecondPlayerBoard()));
-        model.addAttribute("counter", new Counter(0));
-        model.addAttribute("counterOpponent", new Counter(0));
-        model.addAttribute("shipsToPlace", new Gson().toJson(allowedShipService.getListOfShipsToPlace()));
-        model.addAttribute("shipsToPlacePC", new Gson().toJson(allowedShipService.getListOfShipsToPlace()));
-        model.addAttribute("startingPlayer", newGame.getPlayerTurn() == GameTurn.PLAYER1
-                ? newGame.getPlayer1().getUsername()
-                : newGame.getPlayer2().getUsername());
-        model.addAttribute("opponentName", newGame.getPlayer2().getUsername());
-        return "new-game";
-    }*/
 
     //--------- webSocket controllers ------------
     @MessageMapping("/sendShipsPlacementInfo/{gameId}")
@@ -161,71 +134,28 @@ public class NewGameController {
     }
 
     @MessageMapping("/shoot/{gameId}")
-    //@SendTo("/newGame/{gameId}/shoot")
     public void shoot(ShotInfo shotInfo, @DestinationVariable Long gameId) {
 
-        Game currentGame = gameService.findGameById(gameId)
-                        .orElseThrow(() -> new EntityNotFoundException("Game with id: " + gameId + " not found in db"));
+        CurrentGameStateDto currentGameState = gameService.getCurrentGameState(gameId);
 
-        String currentPlayer = gameService.getActivePlayerUsername(currentGame);
-        String opponentPlayer = gameService.getInactivePlayerUsername(currentGame);
-        Board currentPlayerBoard = gameService.getActivePlayerBoard(currentGame);
-        Board opponentPlayerBoard = gameService.getInactivePlayerBoard(currentGame);
-
-        //-------------
-
-        if(currentPlayer.equals("ComputerEasy")){
-            shotInfo.setCoords(boardService.getRandomTarget(boardService.getBoardAsArray(opponentPlayerBoard)));
+        if(UserRole.isBotName(currentGameState.getCurrentPlayer())){
+            shotInfo.setCoords(boardService.getRandomTarget(boardService.getBoardAsArray(currentGameState.getOpponentPlayerBoard())));
         }
 
-        //-------------
+        String shotResult = boardService.getShotResult(currentGameState.getOpponentPlayerBoard(), shotInfo.getCoords());
 
-        String shotResult = boardService.getShotResult(opponentPlayerBoard, shotInfo.getCoords());
-        String sunkShipCoords = "";
-        String shipFieldsToReveal = "";
-        boolean isAllShipsSunk = false;
+        boardService.updateField(currentGameState.getOpponentPlayerBoard(), shotInfo.getCoords(), FieldStatus.valueOf(shotResult));
 
-        boardService.updateField(opponentPlayerBoard, shotInfo.getCoords(), FieldStatus.valueOf(shotResult));
+        shotInfo = boardService.setShotInfo(shotInfo, shotResult, currentGameState);
 
-        if(shotResult.equals(FieldStatus.SHIP_SUNK.name())){
-            sunkShipCoords = boardService.getFieldsOfShipByCoords(opponentPlayerBoard, shotInfo.getCoords());
-            isAllShipsSunk = boardService.checkIfAllShipsAreSunk(opponentPlayerBoard.getId());
-            if(isAllShipsSunk) {
-                shipFieldsToReveal = boardService.getShipFieldsToReveal(currentPlayerBoard.getId());
-            }
+        if(!shotInfo.isAllShipsSunk())
+            gameService.switchTurns(gameId);
+
+        if(!UserRole.isBotName(shotInfo.getCurrentPlayer())) {
+            messagingTemplate.convertAndSendToUser(shotInfo.getCurrentPlayer(), "/queue/newGame/" + gameId + "/shoot", shotInfo);
         }
-        if(!isAllShipsSunk)
-            gameService.switchTurns(currentGame);
-
-//        return ShotInfoDto.builder()
-//                .currentPlayer(currentPlayer)
-//                .opponentPlayer(opponentPlayer)
-//                .shotResult(shotResult)
-//                .coords(shotInfo.getCoords())
-//                .sunkShipCoords(sunkShipCoords)
-//                .isAllShipsSunk(isAllShipsSunk)
-//                .shipFieldsToReveal(shipFieldsToReveal)
-//                .build();
-        shotInfo = ShotInfo.builder()
-                .currentPlayer(currentPlayer)
-                .opponentPlayer(opponentPlayer)
-                .shotResult(shotResult)
-                .coords(shotInfo.getCoords())
-                .sunkShipCoords(sunkShipCoords)
-                .isAllShipsSunk(isAllShipsSunk)
-                .shipFieldsToReveal(shipFieldsToReveal)
-                .build();
-        if(!currentPlayer.equals("ComputerEasy")) {
-            System.out.println("\nyou shootin");
-            System.out.println("boardId: " + opponentPlayerBoard.getId());
-            System.out.println("coords: " + shotInfo.getCoords());
-            messagingTemplate.convertAndSendToUser(currentPlayer, "/queue/newGame/" + gameId + "/shoot", shotInfo);
-        }
-        if(!opponentPlayer.equals("ComputerEasy") || !isAllShipsSunk) {
-            System.out.println("\ncomputer iz shootin");
-            System.out.println("boardId: " + opponentPlayerBoard.getId());
-            System.out.println("coords: " + shotInfo.getCoords());
-            messagingTemplate.convertAndSendToUser(opponentPlayer, "/queue/newGame/" + gameId + "/shoot", shotInfo);
+        if(!UserRole.isBotName(shotInfo.getOpponentPlayer()) || !shotInfo.isAllShipsSunk()) {
+            messagingTemplate.convertAndSendToUser(shotInfo.getOpponentPlayer(), "/queue/newGame/" + gameId + "/shoot", shotInfo);
         }
     }
 

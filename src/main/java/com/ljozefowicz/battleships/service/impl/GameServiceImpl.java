@@ -1,9 +1,12 @@
 package com.ljozefowicz.battleships.service.impl;
 
+import com.ljozefowicz.battleships.dto.CurrentGameStateDto;
 import com.ljozefowicz.battleships.dto.GameDto;
+import com.ljozefowicz.battleships.dto.UserRegistrationDto;
 import com.ljozefowicz.battleships.dto.mapper.DtoMapper;
 import com.ljozefowicz.battleships.enums.GameState;
 import com.ljozefowicz.battleships.enums.GameTurn;
+import com.ljozefowicz.battleships.enums.UserRole;
 import com.ljozefowicz.battleships.exception.EntityNotFoundException;
 import com.ljozefowicz.battleships.model.entity.Board;
 import com.ljozefowicz.battleships.model.entity.Game;
@@ -35,7 +38,8 @@ public class GameServiceImpl implements GameService {
     @Transactional
     public GameDto createNewGame(String username) {
 
-        User currentUser = userService.findByUsername(username);
+        User currentUser = userService.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("User: " + username + " not found in db"));
         Game newGame = Game.builder()
                 .player1(currentUser)
                 .player2(null)
@@ -55,8 +59,9 @@ public class GameServiceImpl implements GameService {
 
         boardService.clearPcShipsToAddList();
 
-        User currentUser = userService.findByUsername(username);
-        User computerPlayer = userService.findByUsername("ComputerEasy");
+        User currentUser = userService.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("User: " + username + " not found in db"));
+        User computerPlayer = userService.saveUser(new UserRegistrationDto(), UserRole.ROLE_BOT_EASY);
         Game newGame = Game.builder()
                 .player1(currentUser)
                 .player2(computerPlayer)
@@ -79,8 +84,15 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
+    @Transactional
     public void deleteGame(Long id) {
+
+        Game game = gameRepository.getById(id);
+
         gameRepository.deleteById(id);
+
+        String username = game.getPlayer2().getUsername();
+        userService.deleteBotUserIfPresent(username);
     }
 
     @Override
@@ -135,31 +147,44 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public String getActivePlayerUsername(Game game){
-        return game.getPlayerTurn() == GameTurn.PLAYER1 ? game.getPlayer1().getUsername() : game.getPlayer2().getUsername();
-    }
-
-    @Override
-    public String getInactivePlayerUsername(Game game){
-        return game.getPlayerTurn() == GameTurn.PLAYER2 ? game.getPlayer1().getUsername() : game.getPlayer2().getUsername();
-    }
-
-    @Override
-    public Board getActivePlayerBoard(Game game){
-        return game.getPlayerTurn() == GameTurn.PLAYER1 ? game.getFirstPlayerBoard() : game.getSecondPlayerBoard();
-    }
-
-    @Override
-    public Board getInactivePlayerBoard(Game game){
-        return game.getPlayerTurn() == GameTurn.PLAYER2 ? game.getFirstPlayerBoard() : game.getSecondPlayerBoard();
-    }
-
-    @Override
     @Transactional
-    public Game switchTurns(Game game){
+    public Game switchTurns(Long gameId){
+
+        Game game = gameRepository.findById(gameId)
+                .orElseThrow(() -> new EntityNotFoundException("Game with id: " + gameId + " not found in db"));
 
         game.setPlayerTurn(game.getPlayerTurn() == GameTurn.PLAYER1 ? GameTurn.PLAYER2 : GameTurn.PLAYER1);
 
         return gameRepository.save(game);
+    }
+
+    @Override
+    public CurrentGameStateDto getCurrentGameState(Long gameId){
+
+        Game currentGame = gameRepository.findById(gameId)
+                .orElseThrow(() -> new EntityNotFoundException("Game with id: " + gameId + " not found in db"));
+
+        return CurrentGameStateDto.builder()
+                .currentPlayer(getActivePlayerUsername(currentGame))
+                .opponentPlayer(getInactivePlayerUsername(currentGame))
+                .currentPlayerBoard(getActivePlayerBoard(currentGame))
+                .opponentPlayerBoard(getInactivePlayerBoard(currentGame))
+                .build();
+    }
+
+    private String getActivePlayerUsername(Game game){
+        return game.getPlayerTurn() == GameTurn.PLAYER1 ? game.getPlayer1().getUsername() : game.getPlayer2().getUsername();
+    }
+
+    private String getInactivePlayerUsername(Game game){
+        return game.getPlayerTurn() == GameTurn.PLAYER2 ? game.getPlayer1().getUsername() : game.getPlayer2().getUsername();
+    }
+
+    private Board getActivePlayerBoard(Game game){
+        return game.getPlayerTurn() == GameTurn.PLAYER1 ? game.getFirstPlayerBoard() : game.getSecondPlayerBoard();
+    }
+
+    private Board getInactivePlayerBoard(Game game){
+        return game.getPlayerTurn() == GameTurn.PLAYER2 ? game.getFirstPlayerBoard() : game.getSecondPlayerBoard();
     }
 }

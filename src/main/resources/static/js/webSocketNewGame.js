@@ -113,7 +113,7 @@ function connect(){
                             document.getElementById("backToLobby").style.display = "flex";
                         }
 
-                        if(payloadBody.currentPlayer === "ComputerEasy" && !isGameVsPcEnded)
+                        if(payloadBody.currentPlayer.includes("BotEasy") && !isGameVsPcEnded)
                             setOpponentEmptyCellsActive();
                         console.log("end of SHOOT subscribe");
             });
