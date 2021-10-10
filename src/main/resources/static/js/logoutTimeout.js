@@ -14,6 +14,7 @@ function resetTimer() {
         currentCount = 600;
         clearTimeout(t);
         t = setTimeout(logout, 600000);
+        setTimeout(logout, 600000);
 }
 
 setInterval(function(){

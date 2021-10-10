@@ -12,7 +12,7 @@
 	<artifactId>battleship</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Battleship</name>
-	<description>Demo for Battleship game</description>
+	<description>Battleship game</description>
 	<properties>
 		<java.version>11</java.version>
 		<junit-jupiter.version>5.7.2</junit-jupiter.version>

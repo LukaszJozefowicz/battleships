@@ -18,8 +18,10 @@ import com.ljozefowicz.battleships.service.BoardService;
 import com.ljozefowicz.battleships.stompMessageObj.ShotInfo;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
+//import javax.transaction.Transactional;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -63,7 +65,7 @@ public class BoardServiceImpl implements BoardService{
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public Board updateField(Board board, String coords, FieldStatus fieldStatus) {
         FieldStatus[][] fieldStatusArray = getBoardAsArray(board);
         fieldStatusArray[getRow(coords)][getCol(coords)] = fieldStatus;
@@ -73,7 +75,7 @@ public class BoardServiceImpl implements BoardService{
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public Board addShipField(Board board, ShipPlacementInfo placementInfo){
 
         ShipUtils shipUtils = new ShipUtils();

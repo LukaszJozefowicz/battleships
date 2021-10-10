@@ -23,12 +23,12 @@
         <tbody th:object="${rowsCounter}">
         <tr class = "gridRow" th:each="row, i : ${board}">
             <td class="bold counterCell" th:text="${rowsCounter.increment()}"></td>
-            <td class="dataCell" th:each="field, j : ${board[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:id="|${i.index}${j.index}|" th:onclick="|sendPlaceShipTile(${i.index}, ${j.index}); setShip(this)|"></td>
+            <td class="dataCell" th:each="field, j : ${board[i.index]}"><input type="button" fieldstatus="empty" class="my-btn" th:id="|${i.index}${j.index}|" th:onclick="|sendPlaceShipTile(${i.index}, ${j.index}); ShipsSetupUtils.setShip(this)|"></td>
         </tr>
         </tbody>
     </table>
-        <button type="button" id="reset" onclick="resetBoard()">Reset board</button>
-        <button type="button" id="randomPlacement" onclick="setAllShipsRandomly()">Randomize</button>
+        <button type="button" id="reset" onclick="ShipsSetupUtils.resetBoard()">Reset board</button>
+        <button type="button" id="randomPlacement" onclick="ShipsSetupUtils.setAllShipsRandomly()">Auto-placement</button>
         <h5 id="shipPlacingInfo">Ship Placement phase.
             <br>Place ships by clicking.
             <br>Longest ships first.</h5>
@@ -67,18 +67,11 @@
 
 <!--    Global vars for .js scripts   -->
     <script th:inline="javascript">
-        var gameId = [[${gameId}]]
-        var shipsToPlace = JSON.parse([[${shipsToPlace}]]);
-        var startingPlayer = [[${startingPlayer}]];
-        var areYouReady = false;
-        var isOpponentReady = false;
-        var whichShip = 0;
-        var whichFieldOfShip  = 1;
-
-        var boardPC = [[${opponentBoard}]];
-        var opponentName = [[${opponentName}]];
-        var isGameVsPC = opponentName.includes("BotEasy") || opponentName.includes("BotNormal") || opponentName.includes("BotHard");
-        console.log("is game vs PC: " + isGameVsPC);
+        const shipsToPlace = JSON.parse([[${shipsToPlace}]]);
+        const startingPlayer = [[${startingPlayer}]];
+        const opponentName = [[${opponentName}]];
+        const isGameVsPC = opponentName.includes("BotEasy") || opponentName.includes("BotNormal") || opponentName.includes("BotHard");
+        const boardPC = isGameVsPC ? [[${opponentBoard}]] : null;
 
     </script>
 </div>

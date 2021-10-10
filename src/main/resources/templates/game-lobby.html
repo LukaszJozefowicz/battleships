@@ -13,7 +13,7 @@
     <div class="block-in">
         <h3 style="text-align: center;">ONLINE LOBBY</h3>
         <br/>
-        <h3 id="availableGames">Available games:</h3>
+        <h3 id="availableGames">Games created:</h3>
         <table class="lobby" id="gamesTable" th:object="${games}">
             <thead>
             <tr class="games">
@@ -24,19 +24,11 @@
             </tr>
             </thead>
             <tbody id = "gamesTableBody">
-<!--            <tr class="games" th:each="row : ${games}">-->
-<!--                <td class="id-col" th:text="${row.getId()}"></td>-->
-<!--                <td class="games" th:text="${row.player1}==null ? 'waiting for player' : ${row.player1.getUsername()}"></td>-->
-<!--                <td class="games" th:text="${row.player2}==null ? 'waiting for player' : ${row.player2.getUsername()}"></td>-->
-<!--                <td class="joinButton"><input type="button" class="bold" value="Join" th:onclick="|window.location.href='/joinGame?gameId=${row.getId()}'|"></td>-->
-<!--            </tr>-->
             </tbody>
         </table>
         <br>
-        <button id="createNewGame" type="button" class="bold" onclick="createNewGame()">Create new game</button>
-        <button id="createNewGameVsPC" type="button" class="bold" onclick="createNewGameVsPC()">Game against bot</button>
-<!--        <button id="send" type="button" class="bold" th:object="${createdGame}" onclick="usun()" th:style="${createdGame} == null ? 'visibility:visible' : 'visibility:hidden'">send</button>-->
-<!--        <button id="disconnect" type="button" class="bold" th:object="${createdGame}" onclick="disconnect()" th:style="${createdGame} == null ? 'visibility:visible' : 'visibility:hidden'">disconnect</button>-->
+        <button id="createNewGame" type="button" class="bold" onclick="sendCreateNewGame()">Create new game</button>
+        <button id="createNewGameVsPC" type="button" class="bold" onclick="sendCreateNewGameVsPC()">Game against bot</button>
     </div>
 
     <div class="block-right">

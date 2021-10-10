@@ -1,27 +1,32 @@
+/* vars from th:inline script tag in boards.html
+
+        var shipsToPlace = JSON.parse([[${shipsToPlace}]]);
+        var opponentName = [[${opponentName}]];
+        var isGameVsPC = opponentName.includes("BotEasy") || opponentName.includes("BotNormal") || opponentName.includes("BotHard");
+
+*/
+
 var socket = null;
 var client = null;
-var currentURL = window.location.href;
 var isGameVsPcEnded = false;
-
 var chatText = "";
-var textOutput = document.getElementById("chatOutput");
-let authenticatedUserTag = document.getElementById("currentUsername");
-let authenticatedUserName = authenticatedUserTag.innerHTML;
-//some global vars used here are declared in boards.html script tag
+
+const currentURL = window.location.href;
+const gameId = currentURL.substring(currentURL.indexOf("/newGame/") + 9);
+const authenticatedUserName = document.getElementById("currentUsername").innerHTML;
 
 window.onload = () => {
     resetTimer();
     idleLogout();
     connect();
     document.getElementById("chatInput").value = "";
-    document.getElementById("chatInput").focus();
     document.getElementById("chatOutput").value = "";
+    document.getElementById("chatInput").focus();
     document.getElementById("backToMenu").style.display = "none";
     document.getElementById("backToLobby").style.display = "none";
     if(isGameVsPC){
-        document.getElementById("opponentShipPlacingInfo").innerHTML = "Computer player is ready";
-        setComputerPlayerShips();
-        setClickActionComputerShoot();
+        GameVsPcUtils.setComputerPlayerShips();
+        GameVsPcUtils.setClickActionComputerShoot();
     }
 
 }
@@ -37,33 +42,24 @@ function connect(){
 
     client.connect({}, frame => {
 
-            var payloadBody = null;
             client.subscribe("/user/queue/sendPlacementInfo/" + gameId, payload => {
 
-                payloadBody = JSON.parse(payload.body);
+                var payloadBody = JSON.parse(payload.body);
 
                 if(payloadBody.shipName !== undefined
                     && payloadBody.whichOfAKind !== undefined
                     && payloadBody.isAllShipsPlaced !== undefined){
 
-                        let oppPlacementInfo = document.getElementById("opponentShipPlacingInfo");
-                        if(payloadBody.isAllShipsPlaced === "false"){
-                            oppPlacementInfo.innerHTML = "Opponent is placing " + payloadBody.shipName + payloadBody.whichOfAKind;
-                        } else if(payloadBody.isAllShipsPlaced === "true"){
-                            oppPlacementInfo.innerHTML = "Opponent has finished placing his ships.";
-                            if(areYouReady){
-                                startShootingPhase();
-                            }
-                            isOpponentReady = true;
-                        }
+                        ShipsSetupUtils.setOpponentPlacementInfo(payloadBody);
+
                 }
 
             });
 
-            client.subscribe("/user/queue/placeShip", payload => {
+            client.subscribe("/user/queue/placeShip/" + gameId, payload => {
             });
 
-            client.subscribe("/user/queue/resetBoard", payload => {
+            client.subscribe("/user/queue/resetBoard/" + gameId, payload => {
             });
 
             client.subscribe("/sendInfoMessage/" + gameId, payload => {
@@ -71,51 +67,22 @@ function connect(){
 
                     switch(payloadBody.messageType){
                         case "gameChatMsg":
-                            receiveChatMessage(payloadBody);
+                            TextOutputUtils.receiveChatMessage(payloadBody);
                             break;
                         case "leaveGame":
-                            playerLeftInfo(payloadBody);
+                            TextOutputUtils.playerLeftInfo(payloadBody);
                             break;
                     }
             });
 
             client.subscribe("/user/queue/newGame/" + gameId + "/shoot", payload => {
                     payloadBody = JSON.parse(payload.body);
+                    ShotUtils.shoot(payloadBody);
 
-                    console.log("current player in SHOOT subscribe kłełełe: " + payloadBody.currentPlayer);
-                        shoot(payloadBody);
+                    if (isGameVsPC && payloadBody.allShipsSunk === true) isGameVsPcEnded = true;
 
-                        let row = parseInt(String.fromCharCode(parseInt(payloadBody.coords.substring(0,1)) + 48)) + 1;  // 1-10
-                        let col = String.fromCharCode(parseInt(payloadBody.coords.substring(1,2)) + 65);                // A-J
-                        let shotResultInfo = payloadBody.currentPlayer + " shot: " + col + row + "\n";
-
-                        switch(payloadBody.shotResult){
-                                case "SHIP_HIT":
-                                    shotResultInfo += payloadBody.opponentPlayer + "'s ship is hit!";
-                                    break;
-                                case "SHIP_SUNK":
-                                    shotResultInfo += payloadBody.opponentPlayer + "'s ship is hit and sunk!";
-                                    break;
-                                case "MISS":
-                                    shotResultInfo += payloadBody.currentPlayer + " missed!";
-                                    break;
-                        }
-                        if(payloadBody.allShipsSunk === false){
-                            appendCurrentTurnInfo({username: payloadBody.opponentPlayer,        //th:inline in boards.html
-                            message: shotResultInfo + "\n\nCurrent turn: "});
-                        } else if(payloadBody.allShipsSunk === true){
-
-                            if (isGameVsPC) isGameVsPcEnded = true;
-
-                            textOutput.value += "All " + payloadBody.opponentPlayer + "'s ships are sunk\n"
-                                           + payloadBody.currentPlayer + " won!!\n";
-                            textOutput.scrollTop = textOutput.scrollHeight;
-                            document.getElementById("backToLobby").style.display = "flex";
-                        }
-
-                        if(payloadBody.currentPlayer.includes("BotEasy") && !isGameVsPcEnded)
-                            setOpponentEmptyCellsActive();
-                        console.log("end of SHOOT subscribe");
+                    if(ShotUtils.isComputerPlayer(payloadBody.currentPlayer) && !isGameVsPcEnded)
+                        BoardUtils.setOpponentEmptyCellsActive();
             });
 
         });
@@ -136,33 +103,8 @@ function disconnect(){
     }
 }
 
-function sendPlaceShipTile(x, y){
-
-    client.send('/ws/shipPlacement', {}, JSON.stringify({
-                        "fieldStatus": "SHIP_ALIVE",
-                        "type": shipsToPlace[whichShip].type,
-                        "length" : shipsToPlace[whichShip].length,
-                        "coords": "" + x + y
-                        }));
-}
-
-function sendResetBoard(){
-
-    client.send('/ws/resetBoard', {}, JSON.stringify({"messageType": "resetBoard", "username":"username", "message": "resetBoard"}));
-}
-
-function sendPlacementInfoToOpponent(shipName, whichOfAKind, isAllShipsPlaced){
-
-    client.send('/ws/sendShipsPlacementInfo/' + gameId, {}, JSON.stringify({
-                            "shipName": shipName,
-                            "whichOfAKind": whichOfAKind,
-                            "isAllShipsPlaced": isAllShipsPlaced
-                            }));
-}
-
 $('#chatInput').on('keypress', function(e){
     chatText = this.value;
-    console.log("in jquery");
 
         if(event.which === 13 || event.keyCode === 13){
 
@@ -177,11 +119,33 @@ $('#chatInput').on('keypress', function(e){
         }
 });
 
+function sendPlaceShipTile(x, y){
+
+    client.send('/ws/shipPlacement/' + gameId, {}, JSON.stringify({
+                        "fieldStatus": "SHIP_ALIVE",
+                        "type": shipsToPlace[ShipsSetupUtils.whichShip].type,
+                        "length" : shipsToPlace[ShipsSetupUtils.whichShip].length,
+                        "coords": "" + x + y
+                        }));
+}
+
+function sendResetBoard(){
+
+    client.send('/ws/resetBoard/' + gameId, {}, JSON.stringify({"messageType": "resetBoard", "username":"username", "message": "resetBoard"}));
+}
+
+function sendPlacementInfoToOpponent(shipName, whichOfAKind, isAllShipsPlaced){
+
+    client.send('/ws/sendShipsPlacementInfo/' + gameId, {}, JSON.stringify({
+                            "shipName": shipName,
+                            "whichOfAKind": whichOfAKind,
+                            "isAllShipsPlaced": isAllShipsPlaced
+                            }));
+}
+
 function sendShotInfo(x, y){
-    //console.log("Is game vs pc ended: " + isGameVsPcEnded);
     if(!isGameVsPcEnded){
         client.send('/ws/shoot/' + gameId, {}, JSON.stringify({
-
                             currentPlayer: "currentPlayer",
                             opponentPlayer: "opponentPlayer",
                             shotResult: "shotResult",
@@ -189,20 +153,6 @@ function sendShotInfo(x, y){
                             }));
     }
 }
-
-/*function sendShotInfo2(){
-    //console.log("Is game vs pc ended2: " + isGameVsPcEnded);
-    if(!isGameVsPcEnded){
-
-    client.send('/ws/shoot/' + gameId, {}, JSON.stringify({
-
-                        currentPlayer: "currentPlayer",
-                        opponentPlayer: "Computer",
-                        shotResult: "shotResult",
-                        coords: "random"
-                        }));
-    }
-}*/
 
 function sendShotInfoPC(x, y){
     sendShotInfo(x, y);

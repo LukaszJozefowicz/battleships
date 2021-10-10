@@ -1,188 +1,247 @@
-//global vars shared from webSocketNewGame.js
+/* vars from th:inline script tag in boards.html
 
-function startShootingPhase(){
+        var shipsToPlace = JSON.parse([[${shipsToPlace}]]);
+        var startingPlayer = [[${startingPlayer}]];
 
-    let yourInfo = document.getElementById("shipPlacingInfo");
-    let opponentInfo = document.getElementById("opponentShipPlacingInfo");
-    yourInfo.remove();
-    opponentInfo.remove();
+*/
 
-    document.getElementById("gameStaticInfo").style.display = "inline-block";
-    document.getElementById("gameLiveInfo").style.display = "inline-block";
+// ------------ text output utils ------------
 
-    appendCurrentTurnInfo({username: startingPlayer,        //th:inline in boards.html
-                           message: "The game has started!\nPlayer to start chosen randomly.\nCurrent turn: "});
+class TextOutputUtils {
 
-    if(startingPlayer === authenticatedUserName){
+    static receiveChatMessage(payloadBody){
+        this.textOutput.value += payloadBody.username + ":" + payloadBody.message + "\n";
+        this.textOutput.scrollTop = this.textOutput.scrollHeight;
+    }
+
+    static appendCurrentTurnInfo(message, username){
+        this.textOutput.value += message + username + "\n";
+        this.textOutput.scrollTop = this.textOutput.scrollHeight;
+    }
+
+    static appendGameFinishedInfo(payloadBody, shotResultInfo){
+        shotResultInfo += "\nAll " + payloadBody.opponentPlayer + "'s ships are sunk\n"
+                                   + payloadBody.currentPlayer + " won!!\n";
+        document.getElementById("backToLobby").style.display = "flex";
+        return shotResultInfo;
+    }
+
+    static playerLeftInfo(payloadBody){
+
+        document.getElementById("backToLobby").style.display = "flex";
+        if(document.getElementById("gameLiveInfo").style.display === "none"){
+            let duringGameInfo = document.getElementById("duringGameInfo");
+            let opponentLeftInfo = document.createElement('h3');
+            opponentLeftInfo.style.textAlign = "center";
+            opponentLeftInfo.style.color = "red";
+            opponentLeftInfo.style.fontWeight = "bold";
+            opponentLeftInfo.innerHTML = "Opponent left";
+            duringGameInfo.appendChild(opponentLeftInfo);
+        }
+        BoardUtils.disableBothBoards();
+        this.textOutput.value += payloadBody.username + " left\n";
+        this.textOutput.scrollTop = this.textOutput.scrollHeight;
+    }
+}
+TextOutputUtils.textOutput = document.getElementById("chatOutput");
+
+// ------------ board utils ------------
+
+class BoardUtils {
+
+    static setTileHitProperties(tile, fieldStatus, bgColor){
+        tile.setAttribute('fieldstatus', fieldStatus);
+        tile.style.backgroundColor = bgColor;
+        tile.disabled = true;
+        tile.style.cursor = "default";
+    }
+
+    static setCellInteractive(cell){
+        $(cell).on({
+                        mouseenter: function() {
+
+                            if($(cell).attr('fieldstatus') == 'empty' && $(cell).is(':enabled')){
+                                    this.style.backgroundColor = "#1e90ff";     //highlighted
+                                    this.style.cursor = "pointer";
+                            }
+                        },
+                        mouseleave: function() {
+                            if($(cell).attr('fieldstatus') == 'empty'){
+                                this.style.backgroundColor = "#add8e6";
+                            }
+                            this.style.cursor = "default";
+                        }
+                    });
+    }
+
+    static setOpponentBoardInactive(){
         let opponentCells = document.querySelectorAll(".opp-btn");
-        opponentCells.forEach(function(cell){
-            cell.disabled = false;
-            setCellActive(cell);
+        opponentCells.forEach(cell => {
+            cell.disabled = true;
         });
     }
-    if(startingPlayer.includes("BotEasy")){
-        setTimeout(sendShotInfo, 2000, "randomX", "randomY");
-    }
-}
 
-function shoot(payloadBody){
-    let tileHit;
-    let cells;
-    if(payloadBody.currentPlayer === authenticatedUserName){
-        cells = document.querySelectorAll(".opp-btn");
-        tileHit = document.querySelector("#" + CSS.escape(payloadBody.coords) + "opp");
-        setOpponentBoardInactive();
-    } else {
-        cells = document.querySelectorAll(".my-btn");
-                document.querySelectorAll(".opp-btn").forEach(cell => {
-                    if(cell.getAttribute('fieldstatus') === "empty") cell.disabled = false;
-                    setCellActive(cell);
-                });
-        tileHit = document.querySelector("#" + CSS.escape(payloadBody.coords));
-    }
-
-    tileHit.disabled = true;
-
-    switch(payloadBody.shotResult){
-        case "SHIP_HIT":
-            tileHit.setAttribute('fieldstatus', 'shipHit');
-            tileHit.style.backgroundColor = "red";
-            tileHit.disabled = true;
-            tileHit.style.cursor = "default";
-            break;
-        case "SHIP_SUNK":
-
-            tileHit.disabled = true;
-            tileHit.style.cursor = "default";
-
-            markShipSunk(cells, JSON.parse(payloadBody.sunkShipCoords));
-            let sunkShips = payloadBody.currentPlayer === authenticatedUserName
-                            ? document.querySelectorAll(".opp-btn[fieldstatus='shipSunk']")
-                            : document.querySelectorAll(".my-btn[fieldstatus='shipSunk']")
-            disableFieldsAroundSunkShip(cells, sunkShips);
-
-            if(payloadBody.allShipsSunk === true){
-                setupGameFinished();
-                let cells = payloadBody.currentPlayer === authenticatedUserName
-                            ? document.querySelectorAll(".my-btn")
-                            : document.querySelectorAll(".opp-btn")
-                revealPlayerWonShips(cells, JSON.parse(payloadBody.shipFieldsToReveal));
-            }
-            break;
-        case "MISS":
-            tileHit.setAttribute('fieldstatus', 'miss');
-            tileHit.style.backgroundColor = "#B0B0B0";
-            tileHit.disabled = true;
-            tileHit.style.cursor = "default";
-            break;
-    }
-}
-
-function setCellActive(cell){
-    $(cell).on({
-                    //mouseenter: function() {
-                    mouseenter: function() {
-
-                        if($(cell).attr('fieldstatus') == 'empty' && $(cell).is(':enabled')){
-                                //this.style.backgroundColor = "#1e90ff";     //highlighted
-                                this.style.cursor = "pointer";
-                        }
-                    },
-                    mouseleave: function() {
-                        if($(cell).attr('fieldstatus') == 'empty'){
-                            this.style.backgroundColor = "#add8e6";
-                        }
-                        this.style.cursor = "default";
-                    }
-                });
-}
-
-function setOpponentBoardInactive(){
-    let opponentCells = document.querySelectorAll(".opp-btn");
-    opponentCells.forEach(function(cell){
-        cell.disabled = true;
-    });
-}
-
-function setOpponentEmptyCellsActive(){
-    let opponentCells = document.querySelectorAll(".opp-btn");
-    opponentCells.forEach(function(cell){
-        if(cell.getAttribute('fieldstatus') === "empty")
-            cell.disabled = false;
-    });
-}
-
-function markShipSunk(cells, coordsArray){
-
-    coordsArray.forEach( coords => {
-        cells.forEach(cell => {
-            if(cell.id.includes(coords)){
-                cell.setAttribute('fieldstatus', 'shipSunk');
-                cell.style.backgroundColor = "black";
-                cell.disabled = true;
-            }
+    static setOpponentEmptyCellsActive(){
+        let opponentCells = document.querySelectorAll(".opp-btn");
+        opponentCells.forEach(cell => {
+            if(cell.getAttribute('fieldstatus') === "empty") cell.disabled = false;
+            this.setCellInteractive(cell);
         });
-    });
-}
-
-function disableFieldsAroundSunkShip(cells, sunkShips){
-
-    sunkShips.forEach(sunkShip => {
-        cells.forEach(cell => {
-
-            if(isNeighbor(cell, sunkShip) || isNeighborDiagonally(cell, sunkShip)){
-                cell.style.backgroundColor = "#B0B0B0";  //grey - disabled around ship
-                cell.disabled=true;
-                cell.setAttribute('fieldstatus', 'miss');
-            }
-        });
-    });
-}
-
-function setupGameFinished(){
-    let bothBoardsCells = document.querySelectorAll(".my-btn, .opp-btn");
-    bothBoardsCells.forEach(cell => {
-        cell.disabled=true;
-    });
-}
-
-function revealPlayerWonShips(cells, shipsToReveal){
-    shipsToReveal.forEach(ship => {
-        cells.forEach(cell => {
-            if(cell.id.includes(ship)
-                && cell.getAttribute('fieldstatus') !== "shipHit"
-                && cell.getAttribute('fieldstatus') !== "shipSunk"){
-                    cell.setAttribute('fieldstatus', 'shipPlaced');
-                    cell.style.backgroundColor = "#0000cd";
-            }
-        });
-    });
-}
-
-function receiveChatMessage(payloadBody){
-
-    textOutput.value += payloadBody.username + ":" + payloadBody.message + "\n";
-    textOutput.scrollTop = textOutput.scrollHeight;
-}
-
-function appendCurrentTurnInfo(payloadBody){
-    textOutput.value += payloadBody.message + payloadBody.username + "\n";
-    textOutput.scrollTop = textOutput.scrollHeight;
-}
-
-function playerLeftInfo(payloadBody){
-
-    document.getElementById("backToLobby").style.display = "flex";
-    if(document.getElementById("gameLiveInfo").style.display === "none"){
-        let duringGameInfo = document.getElementById("duringGameInfo");
-        let opponentLeftInfo = document.createElement('h3');
-        opponentLeftInfo.style.textAlign = "center";
-        opponentLeftInfo.style.color = "red";
-        opponentLeftInfo.style.fontWeight = "bold";
-        opponentLeftInfo.innerHTML = "Opponent left";
-        duringGameInfo.appendChild(opponentLeftInfo);
     }
-    setupGameFinished();
-    textOutput.value += payloadBody.username + " left\n";
-    textOutput.scrollTop = textOutput.scrollHeight;
+
+    static disableBothBoards(){
+        let bothBoardsCells = document.querySelectorAll(".my-btn, .opp-btn");
+        bothBoardsCells.forEach(cell => {
+            cell.disabled=true;
+        });
+    }
+
+    static markShipSunk(isLoggedPlayerTurn, coordsArray){
+
+        let cells = isLoggedPlayerTurn
+                    ? document.querySelectorAll(".opp-btn")
+                    : document.querySelectorAll(".my-btn");
+
+        coordsArray.forEach( coords => {
+            cells.forEach(cell => {
+                if(cell.id.includes(coords)){
+                    this.setTileHitProperties(cell, 'shipSunk', 'black');
+                }
+            });
+        });
+    }
+
+    static disableFieldsAroundSunkShip(isLoggedPlayerTurn, sunkShips){
+
+        let cells = isLoggedPlayerTurn
+                    ? document.querySelectorAll(".opp-btn")
+                    : document.querySelectorAll(".my-btn");
+
+        sunkShips.forEach(sunkShip => {
+            cells.forEach(cell => {
+
+                if(ShipsSetupUtils.isNeighbor(cell, sunkShip) || ShipsSetupUtils.isNeighborDiagonally(cell, sunkShip)){
+                    cell.style.backgroundColor = "#B0B0B0";  //grey - disabled around ship
+                    cell.disabled=true;
+                    cell.setAttribute('fieldstatus', 'miss');
+                }
+            });
+        });
+    }
+
+    static revealPlayerWonShips(cells, shipsToReveal){
+        shipsToReveal.forEach(ship => {
+            cells.forEach(cell => {
+                if(cell.id.includes(ship)
+                    && cell.getAttribute('fieldstatus') !== "shipHit"
+                    && cell.getAttribute('fieldstatus') !== "shipSunk"){
+                        cell.setAttribute('fieldstatus', 'shipPlaced');
+                        cell.style.backgroundColor = "#0000cd";
+                }
+            });
+        });
+    }
+}
+
+// ------------ shot utils ------------
+
+class ShotUtils {
+    static startShootingPhase(){
+
+        let yourInfo = document.getElementById("shipPlacingInfo");
+        let opponentInfo = document.getElementById("opponentShipPlacingInfo");
+        yourInfo.remove();
+        opponentInfo.remove();
+
+        document.getElementById("gameStaticInfo").style.display = "inline-block";
+        document.getElementById("gameLiveInfo").style.display = "inline-block";
+        let chatMsgAtGameStart = "The game has started!\nPlayer to start chosen randomly.\nCurrent turn: ";
+
+        TextOutputUtils.appendCurrentTurnInfo(chatMsgAtGameStart, startingPlayer);
+
+        if(startingPlayer === authenticatedUserName){
+            let opponentCells = document.querySelectorAll(".opp-btn");
+            opponentCells.forEach(cell => {
+                cell.disabled = false;
+                BoardUtils.setCellInteractive(cell);
+            });
+        }
+        if(this.isComputerPlayer(startingPlayer)){
+            setTimeout(sendShotInfo, 2000, "randomX", "randomY");
+        }
+    }
+
+    static shoot(payloadBody){
+        let tileHit;
+        let isLoggedPlayerTurn = payloadBody.currentPlayer === authenticatedUserName;
+
+        if(isLoggedPlayerTurn){
+            tileHit = document.querySelector("#" + CSS.escape(payloadBody.coords) + "opp");
+            BoardUtils.setOpponentBoardInactive();
+        } else {
+            tileHit = document.querySelector("#" + CSS.escape(payloadBody.coords));
+            BoardUtils.setOpponentEmptyCellsActive();
+        }
+
+        tileHit.disabled = true;
+        let row = parseInt(String.fromCharCode(parseInt(payloadBody.coords.substring(0,1)) + 48)) + 1;  // 1-10
+        let col = String.fromCharCode(parseInt(payloadBody.coords.substring(1,2)) + 65);                // A-J
+        let shotResultInfo = payloadBody.currentPlayer + " shot: " + col + row + "\n";
+
+        switch(payloadBody.shotResult){
+            case "SHIP_HIT":
+                shotResultInfo = this.setShotResultShipHit(tileHit, shotResultInfo);
+                break;
+            case "SHIP_SUNK":
+                shotResultInfo = this.setShotResultShipSunk(tileHit, shotResultInfo, isLoggedPlayerTurn, payloadBody);
+                break;
+            case "MISS":
+                shotResultInfo = this.setShotResultMiss(tileHit, shotResultInfo);
+                break;
+        }
+
+        TextOutputUtils.appendCurrentTurnInfo(shotResultInfo, "");
+
+        if(payloadBody.allShipsSunk === false){
+            TextOutputUtils.appendCurrentTurnInfo("\nCurrent turn: ", payloadBody.opponentPlayer);
+        }
+
+    }
+
+    static setShotResultShipHit(tileHit, shotResultInfo){
+        BoardUtils.setTileHitProperties(tileHit, 'shipHit', 'red');
+        shotResultInfo += payloadBody.opponentPlayer + "'s ship is hit!";
+        return shotResultInfo;
+    }
+
+    static setShotResultMiss(tileHit, shotResultInfo){
+        BoardUtils.setTileHitProperties(tileHit, 'miss', '#B0B0B0');
+        shotResultInfo += payloadBody.currentPlayer + " missed!";
+        return shotResultInfo;
+    }
+
+    static setShotResultShipSunk(tileHit, shotResultInfo, isLoggedPlayerTurn, payloadBody){
+        BoardUtils.setTileHitProperties(tileHit, 'shipSunk', 'black');
+        shotResultInfo += payloadBody.opponentPlayer + "'s ship is hit and sunk!";
+
+        BoardUtils.markShipSunk(isLoggedPlayerTurn, JSON.parse(payloadBody.sunkShipCoords));
+        let sunkShips = isLoggedPlayerTurn
+                        ? document.querySelectorAll(".opp-btn[fieldstatus='shipSunk']")
+                        : document.querySelectorAll(".my-btn[fieldstatus='shipSunk']")
+        BoardUtils.disableFieldsAroundSunkShip(isLoggedPlayerTurn, sunkShips);
+
+        if(payloadBody.allShipsSunk === true){
+            shotResultInfo = TextOutputUtils.appendGameFinishedInfo(payloadBody, shotResultInfo);
+            BoardUtils.disableBothBoards();
+            let playerWonCells = payloadBody.currentPlayer === authenticatedUserName
+                        ? document.querySelectorAll(".my-btn")
+                        : document.querySelectorAll(".opp-btn")
+            BoardUtils.revealPlayerWonShips(playerWonCells, JSON.parse(payloadBody.shipFieldsToReveal));
+        }
+        return shotResultInfo;
+    }
+
+    static isComputerPlayer(playerName){
+        return playerName.includes("BotEasy") || playerName.includes("BotNormal") || playerName.includes("BotHard");
+    }
 }

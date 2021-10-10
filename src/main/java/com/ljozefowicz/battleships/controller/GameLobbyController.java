@@ -3,6 +3,7 @@ package com.ljozefowicz.battleships.controller;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.ljozefowicz.battleships.dto.GameDto;
+import com.ljozefowicz.battleships.exception.EntityNotFoundException;
 import com.ljozefowicz.battleships.stompMessageObj.Message;
 import com.ljozefowicz.battleships.dto.mapper.DtoMapper;
 import com.ljozefowicz.battleships.enums.GameState;
@@ -105,8 +106,6 @@ public class GameLobbyController {
         return new Gson().toJson(activeGamesList.getGamesList(), List.class);
     }
 
-    //----------------
-
     @MessageMapping("/newGameVsPC")
     @SendTo("/gameLobby")
     public String createNewGameVsPC(Principal principal){
@@ -115,8 +114,6 @@ public class GameLobbyController {
 
         return new Gson().toJson(activeGamesList.getGamesList(), List.class);
     }
-
-    //----------------
 
     @MessageMapping("/joinGame/{gameId}")
     @SendTo("/gameLobby")
@@ -134,13 +131,13 @@ public class GameLobbyController {
     @SendTo("/gameLobby")
     public String deleteGameOrUserJoinedAfterUserLeft(Principal principal){
 
-        //delete game created by user once he left
+        //delete game created by user once he left the lobby
         gameService.findGameByPlayer1UsernameNotInGame(principal.getName()).ifPresent(createdGame -> {
-            gameService.deleteGame(createdGame.getId());
+            gameService.deleteGame(createdGame);
             activeGamesList.getGamesList().remove(dtoMapper.mapToGameDto(createdGame));
         });
 
-        //remove user if he was present in active game as player2 (joined), once he left the lobby
+        //remove user from game if he was present in active game as player2 (joined), once he left the lobby
         gameService.findGameByPlayer2UsernameNotInGame(principal.getName()).ifPresent(possibleGameJoined -> {
             final Long boardIdToDelete = possibleGameJoined.getSecondPlayerBoard().getId();
             possibleGameJoined.setPlayer2(null);
@@ -178,7 +175,8 @@ public class GameLobbyController {
                 .stream()
                 .filter(game -> game.getId().equals(gameId))
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new EntityNotFoundException("Game you're trying to join doesn't exist anymore"));
+
         int index = activeGamesList.getGamesList().indexOf(gameDto);
         activeGamesList.getGamesList().get(index).setPlayer2(playerName);
         activeGamesList.getGamesList().get(index).setGameState(gameState.name());

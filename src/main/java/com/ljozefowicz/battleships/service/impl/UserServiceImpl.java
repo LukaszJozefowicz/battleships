@@ -1,7 +1,7 @@
 package com.ljozefowicz.battleships.service.impl;
 
 import com.ljozefowicz.battleships.dto.UserRegistrationDto;
-import com.ljozefowicz.battleships.exception.EntityNotFoundException;
+import com.ljozefowicz.battleships.model.entity.Game;
 import com.ljozefowicz.battleships.model.entity.Role;
 import com.ljozefowicz.battleships.model.entity.User;
 import com.ljozefowicz.battleships.enums.UserRole;
@@ -15,6 +15,8 @@ import javax.transaction.Transactional;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Random;
+
+import static com.ljozefowicz.battleships.enums.UserRole.isBot;
 
 @Service
 @AllArgsConstructor
@@ -50,9 +52,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    @Override
     @Transactional
-    public void deleteBotUserIfPresent(String name){
-        if(UserRole.isBotName(name))
-            userRepository.deleteByUsername(name);
+    public void deleteBotUserIfPresent(Game game){
+        if(game.getPlayer2() != null) {
+            if (isBot(game.getPlayer2().getUsername()))
+                userRepository.deleteByUsername(game.getPlayer2().getUsername());
+        }
     }
 }

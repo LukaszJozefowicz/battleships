@@ -30,6 +30,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
+import static com.ljozefowicz.battleships.enums.UserRole.isBot;
+
 
 @Controller
 @AllArgsConstructor
@@ -46,15 +48,15 @@ public class NewGameController {
     @GetMapping("/newGame/{gameId}")
     public String createNewGame(Model model, @PathVariable Long gameId, Principal principal){
         gameService.findGameById(gameId).ifPresent(game -> {
-            Board playerBoard = principal.getName().equals(game.getPlayer1().getUsername())
-                                ? game.getFirstPlayerBoard()
-                                : game.getSecondPlayerBoard();
-            Board opponentBoard = principal.getName().equals(game.getPlayer1().getUsername())
-                                ? game.getSecondPlayerBoard()
-                                : game.getFirstPlayerBoard();
+            FieldStatus[][] playerBoardAsArray = principal.getName().equals(game.getPlayer1().getUsername())
+                                ? boardService.getBoardAsArray(game.getFirstPlayerBoard())
+                                : boardService.getBoardAsArray(game.getSecondPlayerBoard());
+            FieldStatus[][] opponentBoardAsArray = principal.getName().equals(game.getPlayer1().getUsername())
+                                ? boardService.getBoardAsArray(game.getSecondPlayerBoard())
+                                : boardService.getBoardAsArray(game.getFirstPlayerBoard());
 
-            model.addAttribute("board", boardService.getBoardAsArray(playerBoard));
-            model.addAttribute("opponentBoard", boardService.getBoardAsArray(opponentBoard));
+            model.addAttribute("board", playerBoardAsArray);
+            model.addAttribute("opponentBoard", opponentBoardAsArray);
             model.addAttribute("rowsCounter", new Counter(0));
             model.addAttribute("rowsCounterOpponent", new Counter(0));
             model.addAttribute("shipsToPlace", new Gson().toJson(allowedShipService.getListOfShipsToPlace()));
@@ -73,38 +75,28 @@ public class NewGameController {
     public void sendShipsPlacementInfoToOpponent(ShipPlacementInfoForOpponent placementInfo, @DestinationVariable Long gameId, Principal principal){
 
         gameService.findGameById(gameId).ifPresent(currentGame -> {
-            String opponentUser = principal.getName().equals(currentGame.getPlayer1().getUsername())
-                                ? currentGame.getPlayer2().getUsername()
-                                : currentGame.getPlayer1().getUsername();
-
+            String opponentUser = gameService.getOpponentName(currentGame, principal.getName());
             messagingTemplate.convertAndSendToUser(opponentUser, "/queue/sendPlacementInfo/" + gameId, placementInfo);
         });
     }
 
-    @MessageMapping("/shipPlacement")
-    public void placeShip(ShipPlacementInfo placementInfo, Principal principal){
+    @MessageMapping("/shipPlacement/{gameId}")
+    public void placeShip(ShipPlacementInfo placementInfo, Principal principal, @DestinationVariable Long gameId){
 
-        Game currentGame = gameService.findGameByUsername(principal.getName())
-                            .orElseThrow(() -> new EntityNotFoundException("Game you entered doesn't exist anymore"));
-
-        Board currentBoard = gameService.getBoardByPlayerName(currentGame, principal.getName());
+        Board currentBoard = gameService.getBoardByUsername(gameId, principal.getName());
 
         boardService.updateField(currentBoard, placementInfo.getCoords(), FieldStatus.SHIP_ALIVE); //FieldStatus.SHIP_ALIVE || FieldStatus.valueOf(placementInfo.getFieldStatus())
         boardService.addShipField(currentBoard, placementInfo);
 
-        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/placeShip", placementInfo);
+        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/placeShip/" + gameId, placementInfo);
     }
 
-    @MessageMapping("/resetBoard")
-    public void resetBoard(Principal principal, Message message){
-        Game currentGame = gameService.findGameByUsername(principal.getName())
-                            .orElseThrow(() -> new EntityNotFoundException("Game you entered doesn't exist anymore"));
-        Board currentBoard = principal.getName().equals(currentGame.getPlayer1().getUsername())
-                            ? currentGame.getFirstPlayerBoard()
-                            : currentGame.getSecondPlayerBoard();
+    @MessageMapping("/resetBoard/{gameId}")
+    public void resetBoard(Principal principal, Message message, @DestinationVariable Long gameId){
 
+        Board currentBoard = gameService.getBoardByUsername(gameId, principal.getName());
         boardService.resetBoard(currentBoard);
-        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/resetBoard", message);
+        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/resetBoard/" + gameId, message);
     }
 
     @MessageMapping("/gameChat/{gameId}")
@@ -122,7 +114,7 @@ public class NewGameController {
     public Message leaveGame(Message messageObj, @DestinationVariable Long gameId){
 
         gameService.findGameById(gameId).ifPresent(currentGame -> {
-            gameService.deleteGame(currentGame.getId());
+            gameService.deleteGame(currentGame);
             activeGamesList.getGamesList().remove(dtoMapper.mapToGameDto(currentGame));
         });
 
@@ -138,23 +130,21 @@ public class NewGameController {
 
         CurrentGameStateDto currentGameState = gameService.getCurrentGameState(gameId);
 
-        if(UserRole.isBotName(currentGameState.getCurrentPlayer())){
+        if(isBot(currentGameState.getCurrentPlayer())){
             shotInfo.setCoords(boardService.getRandomTarget(boardService.getBoardAsArray(currentGameState.getOpponentPlayerBoard())));
         }
 
         String shotResult = boardService.getShotResult(currentGameState.getOpponentPlayerBoard(), shotInfo.getCoords());
-
         boardService.updateField(currentGameState.getOpponentPlayerBoard(), shotInfo.getCoords(), FieldStatus.valueOf(shotResult));
-
         shotInfo = boardService.setShotInfo(shotInfo, shotResult, currentGameState);
 
         if(!shotInfo.isAllShipsSunk())
             gameService.switchTurns(gameId);
 
-        if(!UserRole.isBotName(shotInfo.getCurrentPlayer())) {
+        if(!isBot(shotInfo.getCurrentPlayer())) {
             messagingTemplate.convertAndSendToUser(shotInfo.getCurrentPlayer(), "/queue/newGame/" + gameId + "/shoot", shotInfo);
         }
-        if(!UserRole.isBotName(shotInfo.getOpponentPlayer()) || !shotInfo.isAllShipsSunk()) {
+        if(!isBot(shotInfo.getOpponentPlayer()) || !shotInfo.isAllShipsSunk()) {
             messagingTemplate.convertAndSendToUser(shotInfo.getOpponentPlayer(), "/queue/newGame/" + gameId + "/shoot", shotInfo);
         }
     }

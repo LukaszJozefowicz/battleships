@@ -28,7 +28,7 @@ public enum UserRole {
         return roleName;
     }
 
-    public static boolean isBotName(String name){
+    public static boolean isBot(String name){
         return botNames.stream()
                 .anyMatch(botName -> name.contains(botName));
     }

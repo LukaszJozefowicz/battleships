@@ -85,14 +85,9 @@ public class GameServiceImpl implements GameService {
 
     @Override
     @Transactional
-    public void deleteGame(Long id) {
-
-        Game game = gameRepository.getById(id);
-
-        gameRepository.deleteById(id);
-
-        String username = game.getPlayer2().getUsername();
-        userService.deleteBotUserIfPresent(username);
+    public void deleteGame(Game game) {
+        gameRepository.deleteById(game.getId());
+        userService.deleteBotUserIfPresent(game);
     }
 
     @Override
@@ -109,12 +104,12 @@ public class GameServiceImpl implements GameService {
         return gameRepository.findByPlayer2_idAndGameStateNot(user.getId(), GameState.GAME_IN_PROGRESS);
     }
 
-    @Override
+    /*@Override
     public Optional<Game> findGameByUsername(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("User with name: " + username + " not found in db"));
         return gameRepository.findByPlayer1_idOrPlayer2_id(user.getId(), user.getId());
-    }
+    }*/
 
     @Override
     public List<Game> getAvailableGames(){
@@ -140,10 +135,10 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public Board getBoardByPlayerName(Game game, String username){
-        return game.getPlayer1().getUsername().equals(username)
-                ? game.getFirstPlayerBoard()
-                : game.getSecondPlayerBoard();
+    public String getOpponentName(Game game, String username){
+        return username.equals(game.getPlayer1().getUsername())
+                ? game.getPlayer2().getUsername()
+                : game.getPlayer1().getUsername();
     }
 
     @Override
@@ -170,6 +165,16 @@ public class GameServiceImpl implements GameService {
                 .currentPlayerBoard(getActivePlayerBoard(currentGame))
                 .opponentPlayerBoard(getInactivePlayerBoard(currentGame))
                 .build();
+    }
+
+    @Override
+    public Board getBoardByUsername(Long gameId, String username){
+        Game game = gameRepository.findById(gameId)
+                .orElseThrow(() -> new EntityNotFoundException("Game with id: " + gameId + " not found in db"));
+
+        return game.getPlayer1().getUsername().equals(username)
+                ? game.getFirstPlayerBoard()
+                : game.getSecondPlayerBoard();
     }
 
     private String getActivePlayerUsername(Game game){

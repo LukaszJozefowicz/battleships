@@ -1,17 +1,15 @@
 var socket = null;
 var client = null;
-var currentUserId;
 var activeUsersList = null;
 var activeGamesList = null;
 var chatText = "";
-document.getElementById("chatInput").value = "";
-var authenticatedUserTag = document.getElementById("currentUsername");
-var authenticatedUserName = authenticatedUserTag.innerHTML;
+const authenticatedUserName = document.getElementById("currentUsername").innerHTML;
 
 window.onload = function load(){
     resetTimer();
     idleLogout();
     connect();
+    document.getElementById("chatInput").value = "";
     document.getElementById("chatOutput").value = "";
     document.getElementById("chatInput").focus();
     document.getElementById("backToMenu").style.display = "block";
@@ -38,16 +36,16 @@ function connect(){
                                 let usersTableBody = document.getElementById('users-online-tbody');
                                 usersTableBody.remove();
                                 activeUsersList = payloadBody;
-                                generateUsersTable();
+                                GameLobbyUtils.generateUsersTable();
                 } else if(payloadBody.username !== undefined
                          && payloadBody.message !== undefined
                          && payloadBody.messageType == "lobbyChatMsg"){
-                                receiveChatMessage(payloadBody);
+                                GameLobbyUtils.receiveChatMessage(payloadBody);
                 } else if(Array.isArray(payloadBody)
                          && payloadBody[0].id === 0
                          && payloadBody[0].gameState !== undefined){
                                 activeGamesList = payloadBody;
-                                generateGamesTable();
+                                GameLobbyUtils.generateGamesTable();
                 }
 
             });
@@ -59,7 +57,7 @@ function connect(){
                         && payloadBody.player2 !== undefined
                         && payloadBody.gameState === "READY_TO_START"){
                         gameStartCountdown();
-                        setTimeout(redirectToNewGameScreen.bind(null, payloadBody.id), 3000);
+                        setTimeout(GameLobbyUtils.redirectToNewGameScreen.bind(null, payloadBody.id), 3000);
                    }
 
             });
@@ -87,11 +85,13 @@ function disconnect(){
 
 $('#chatInput').on('keypress', function(e){
     chatText = this.value;
-    console.log("in jquery");
 
         if(event.which === 13 || event.keyCode === 13){
 
-            client.send('/ws/sendToChat', {}, JSON.stringify({messageType: "lobbyChatMsg", username: authenticatedUserName, message: chatText}));
+            client.send('/ws/sendToChat', {}, JSON.stringify(
+                                        { messageType: "lobbyChatMsg",
+                                        username: authenticatedUserName,
+                                        message: chatText}));
             e.preventDefault();
             this.value = "";
             chatText = "";
@@ -99,33 +99,31 @@ $('#chatInput').on('keypress', function(e){
         }
 });
 
-function createNewGame(){
-                client.send('/ws/newGame', {}, JSON.stringify(
-                [{"id":0,"player1":"string","player2":"string","gameState":"string"}]));
-                document.getElementById('createNewGame').disabled = true;
-                document.getElementById('createNewGameVsPC').disabled = true;
+function sendCreateNewGame(){
+    client.send('/ws/newGame', {}, JSON.stringify(
+        [{"id":0,"player1":"string","player2":"string","gameState":"string"}]));
+    GameLobbyUtils.setNewGameButtons(true);
 
 }
 
-function joinGame(id){
+function sendJoinGame(id){
     let url = "/ws/joinGame/" + id;
     client.send(url, {}, JSON.stringify(
-                    [{"id":0,"player1":"string","player2":"string","gameState":"string"}]));
+        [{"id":0,"player1":"string","player2":"string","gameState":"string"}]));
     let player2td = document.getElementById("player2spot" + id);
     player2td.innerHTML = authenticatedUserName;
-    document.getElementById('createNewGame').disabled = true;
+    GameLobbyUtils.setNewGameButtons(true);
 }
 
-function leaveGame(){
+function sendLeaveGame(){
     client.send('/ws/deleteGameOrUserJoined', {}, JSON.stringify(activeGamesList));
     let gameStartInfo = document.getElementById('gameStartInfo').style.visibility = "hidden";
-    document.getElementById('createNewGame').disabled = false;
+    GameLobbyUtils.setNewGameButtons(false);
 }
 
-function newGameRedirect(payload){
+function sendNewGameRedirect(payload){
 
     activeUsersList = activeUsersList.filter(e => e !== payload.player1 && e !== payload.player2);
-    client.send('/ws/userLeft', {}, JSON.stringify(activeUsersList));
     client.send('/ws/newGame/redirect', {}, JSON.stringify(
                     {"id":payload.id,
                     "player1":payload.player1,
@@ -136,10 +134,8 @@ function newGameRedirect(payload){
 
 // ---------- vs PC ----------
 
-function createNewGameVsPC(){
-                client.send('/ws/newGameVsPC', {}, JSON.stringify(
-                [{"id":0,"player1":"string","player2":"Computer","gameState":"string"}]));
-                document.getElementById('createNewGame').disabled = true;
-                document.getElementById('createNewGameVsPC').disabled = true;
-
+function sendCreateNewGameVsPC(){
+    client.send('/ws/newGameVsPC', {}, JSON.stringify(
+        [{"id":0,"player1":"string","player2":"Computer","gameState":"string"}]));
+        GameLobbyUtils.setNewGameButtons(true);
 }

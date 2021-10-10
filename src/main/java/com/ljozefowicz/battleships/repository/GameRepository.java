@@ -9,5 +9,5 @@ import java.util.Optional;
 public interface GameRepository extends JpaRepository<Game, Long> {
     Optional<Game> findByPlayer1_idAndGameStateNot(Long id, GameState gameState);
     Optional<Game> findByPlayer2_idAndGameStateNot(Long id, GameState gameState);
-    Optional<Game> findByPlayer1_idOrPlayer2_id(Long id, Long id2);
+    //Optional<Game> findByPlayer1_idOrPlayer2_id(Long id, Long id2);
 }

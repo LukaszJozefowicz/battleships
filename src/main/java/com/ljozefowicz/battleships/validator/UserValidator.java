@@ -31,11 +31,15 @@ public class UserValidator implements Validator {
         if (user.getUsername().length() < 4 || user.getUsername().length() > 16) {
             errors.rejectValue("username", "Size.user.username");
         }
-        if (UserRole.isBotName(user.getUsername())) {
+        if (UserRole.isBot(user.getUsername())) {
             errors.rejectValue("username", "Forbidden.user.username");
         }
+
         userService.findByUsername(user.getUsername())
                 .ifPresent(u -> errors.rejectValue("username", "Duplicate.user.username"));
+
+        userService.findByEmail(user.getEmail())
+                .ifPresent(u -> errors.rejectValue("email", "Duplicate.user.email"));
 
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "password", "NotEmpty");
         if (user.getPassword().length() < 8 || user.getPassword().length() > 32) {

@@ -12,7 +12,6 @@ import javax.validation.constraints.NotEmpty;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-
 public class UserRegistrationDto {
 
     @NotEmpty
@@ -31,12 +30,4 @@ public class UserRegistrationDto {
 
     @NotEmpty
     private String confirmPassword;
-
-//    public UserRegistrationDto(String username, String email, String password, String confirmPassword, String confirmEmail) {
-//        this.username = username;
-//        this.password = password;
-//        this.email = email;
-//        this.confirmEmail = confirmEmail;
-//        this.confirmPassword = confirmPassword;
-//    }
 }
