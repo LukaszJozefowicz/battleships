@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:insert="fragments/header :: head">
+  <meta charset="UTF-8">
+  <title>Main menu</title>
+</head>
+<body>
+<nav th:replace="fragments/menu :: menu-bar"></nav>
+    <br><br><br>
+    <div class="container">
+        <h2>Settings</h2>
+        <form th:action="@{/saveSettings}" method="post">
+            <label for="difficulty">AI difficulty:</label>
+            <select id="difficulty" name="difficulty">
+                <option value="EASY">Easy</option>
+                <option value="NORMAL">Normal</option>
+                <option value="HARD">Hard</option>
+            </select>
+            <div class="btn-group-settings">
+                <input id="backFromSettings" type="button" class="bold" value="Back" onclick="window.location.href='/'">
+                <input id="saveSettings" type="submit" class="bold" value="Save">
+            </div>
+        </form>
+    </div>
+
+
+    <div class="container">
+
+    </div>
+
+
+</body>
+
+<script type="text/javascript" th:src="@{/webjars/jquery/3.6.0/jquery.min.js/}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/3.3.7/js/bootstrap.min.js}"></script>
+<script src="/js/logoutTimeout.js" type="text/javascript"></script>
+<script>
+    window.onload = () => {
+        document.getElementById("backToMenu").style.display = "none";
+        resetTimer();
+        idleLogout();
+    }
+</script>
+</html>

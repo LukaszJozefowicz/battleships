@@ -1,5 +1,7 @@
 package com.ljozefowicz.battleships.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,13 +18,14 @@ import java.util.Collection;
 @AllArgsConstructor
 public class User {
 
-    public User(String username, String password, String passwordConfirm, String email, String emailConfirm, Collection<Role> roles) {
+    public User(String username, String password, String passwordConfirm, String email, String emailConfirm, Collection<Role> roles, Settings settings) {
         this.username = username;
         this.password = password;
         this.passwordConfirm = passwordConfirm;
         this.email = email;
         this.emailConfirm = emailConfirm;
         this.roles = roles;
+        this.settings = settings;
     }
 
     @Id
@@ -50,4 +53,8 @@ public class User {
                     name = "role_id", referencedColumnName = "id"))
 
     private Collection<Role> roles;
+
+    @ManyToOne//(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinColumn(name = "settings_id")
+    private Settings settings;
 }

@@ -42,4 +42,7 @@ public class Game {
     @Enumerated(EnumType.STRING)
     @Column(name = "player_turn", nullable = false)
     private GameTurn playerTurn;
+
+    @Transient
+    Settings settings;
 }

@@ -3,6 +3,7 @@ package com.ljozefowicz.battleships.service;
 import com.ljozefowicz.battleships.dto.UserRegistrationDto;
 import com.ljozefowicz.battleships.enums.UserRole;
 import com.ljozefowicz.battleships.model.entity.Game;
+import com.ljozefowicz.battleships.model.entity.Settings;
 import com.ljozefowicz.battleships.model.entity.User;
 
 import java.util.Optional;
@@ -15,5 +16,7 @@ public interface UserService{
     Optional<User> findByEmail(String email);
 
     void deleteBotUserIfPresent(Game game);
+
+    User saveUserSettings(String username, Settings settings);
 
 }

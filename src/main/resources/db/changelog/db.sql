@@ -97,3 +97,27 @@ CREATE SEQUENCE IF NOT EXISTS ships_sequence OWNED BY ships.id;
 insert into roles (id, name) values(3, 'ROLE_BOT_EASY');
 insert into roles (id, name) values(4, 'ROLE_BOT_NORMAL');
 insert into roles (id, name) values(5, 'ROLE_BOT_HARD');
+
+--changeset lukasz:13
+CREATE TABLE IF NOT EXISTS settings
+(
+    id bigint NOT NULL,
+    difficulty VARCHAR(50) NOT NULL,
+    primary key(id)
+);
+
+INSERT INTO settings (id, difficulty) VALUES(1, 'EASY');
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS settings_id bigint;
+ALTER TABLE users ADD CONSTRAINT settings_fk FOREIGN KEY(settings_id) REFERENCES settings;
+
+--changeset lukasz:14
+CREATE SEQUENCE IF NOT EXISTS settings_sequence OWNED BY settings.id
+    increment 1
+    start 2
+    minvalue 1
+    maxvalue 9223372036854775807
+    cache 1;
+
+--changeset lukasz:15
+ALTER TABLE settings ADD CONSTRAINT difficulty_unique UNIQUE (difficulty);

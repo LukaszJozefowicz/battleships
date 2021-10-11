@@ -3,8 +3,10 @@ package com.ljozefowicz.battleships.service.impl;
 import com.ljozefowicz.battleships.dto.UserRegistrationDto;
 import com.ljozefowicz.battleships.model.entity.Game;
 import com.ljozefowicz.battleships.model.entity.Role;
+import com.ljozefowicz.battleships.model.entity.Settings;
 import com.ljozefowicz.battleships.model.entity.User;
 import com.ljozefowicz.battleships.enums.UserRole;
+import com.ljozefowicz.battleships.repository.SettingsRepository;
 import com.ljozefowicz.battleships.repository.UserRepository;
 import com.ljozefowicz.battleships.service.UserService;
 import lombok.AllArgsConstructor;
@@ -23,6 +25,7 @@ import static com.ljozefowicz.battleships.enums.UserRole.isBot;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final SettingsRepository settingsRepository;
     private final BCryptPasswordEncoder encoder;
 
     @Override
@@ -42,7 +45,8 @@ public class UserServiceImpl implements UserService {
                 encoder.encode(userRegistrationDto.getConfirmPassword()),
                 userRegistrationDto.getEmail(),
                 userRegistrationDto.getConfirmEmail(),
-                Arrays.asList(new Role(userRole.getId(), userRole)));
+                Arrays.asList(new Role(userRole.getId(), userRole)),
+                settingsRepository.findById(1L).get()); //default settings
         return userRepository.save(user);
     }
 
@@ -63,5 +67,18 @@ public class UserServiceImpl implements UserService {
             if (isBot(game.getPlayer2().getUsername()))
                 userRepository.deleteByUsername(game.getPlayer2().getUsername());
         }
+    }
+
+    @Override
+    public User saveUserSettings(String username, Settings settings){
+        User user = findByUsername(username).get();
+
+        settingsRepository.findByDifficulty(settings.getDifficulty())
+                .ifPresentOrElse(s -> user.setSettings(s),
+                () -> {
+                    Settings newSettings = settingsRepository.save(settings);
+                    user.setSettings(newSettings);
+                });
+        return userRepository.save(user);
     }
 }

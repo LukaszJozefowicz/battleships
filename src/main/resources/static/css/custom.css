@@ -134,3 +134,24 @@ h1 {
   color: white;
   font-weight: bold;
 }
+
+.btn-group-settings {
+
+  width: 100%;
+  text-align: left;
+  font-weight: bold;
+  margin: auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+}
+
+.btn-settings {
+    display: inline-block;
+    font-weight: bold;
+    text-align: center;
+    font-size: 1em;
+    flex-direction: row;
+    margin-left: 20px;
+    margin-right: 20px;
+}
