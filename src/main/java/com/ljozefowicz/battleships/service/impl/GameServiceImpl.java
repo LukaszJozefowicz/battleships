@@ -10,6 +10,7 @@ import com.ljozefowicz.battleships.enums.UserRole;
 import com.ljozefowicz.battleships.exception.EntityNotFoundException;
 import com.ljozefowicz.battleships.model.entity.Board;
 import com.ljozefowicz.battleships.model.entity.Game;
+import com.ljozefowicz.battleships.model.entity.Settings;
 import com.ljozefowicz.battleships.model.entity.User;
 import com.ljozefowicz.battleships.repository.GameRepository;
 import com.ljozefowicz.battleships.repository.UserRepository;
@@ -40,13 +41,14 @@ public class GameServiceImpl implements GameService {
 
         User currentUser = userService.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("User: " + username + " not found in db"));
+
         Game newGame = Game.builder()
                 .player1(currentUser)
                 .player2(null)
-                .firstPlayerBoard(boardService.initializeBoard())
+                .firstPlayerBoard(boardService.initializeEmptyBoard())
                 .secondPlayerBoard(null)
                 .gameState(GameState.WAITING_FOR_PLAYER)
-                .playerTurn(new Random().nextBoolean() ? GameTurn.PLAYER1 : GameTurn.PLAYER2)
+                .playerTurn(getStartingPlayer(currentUser.getSettings().getStartingPlayer()))
                 .build();
 
         gameRepository.save(newGame);
@@ -57,21 +59,18 @@ public class GameServiceImpl implements GameService {
     @Transactional
     public GameDto createNewGameVsPC(String username) {
 
-        boardService.clearPcShipsToAddList();
-
         User currentUser = userService.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("User: " + username + " not found in db"));
-        User computerPlayer = userService.saveUser(new UserRegistrationDto(), UserRole.ROLE_BOT_EASY);
+        User computerPlayer = userService.saveUser(new UserRegistrationDto(), UserRole.ROLE_BOT, currentUser);
+
         Game newGame = Game.builder()
                 .player1(currentUser)
                 .player2(computerPlayer)
-                .firstPlayerBoard(boardService.initializeBoard())
-                .secondPlayerBoard(boardService.initializeComputerBoard())
+                .firstPlayerBoard(boardService.initializeEmptyBoard())
+                .secondPlayerBoard(boardService.autoInitializeBoard(currentUser.getSettings().getShipShape(), null))
                 .gameState(GameState.READY_TO_START)
-                .playerTurn(new Random().nextBoolean() ? GameTurn.PLAYER1 : GameTurn.PLAYER2)
+                .playerTurn(getStartingPlayer(currentUser.getSettings().getStartingPlayer()))
                 .build();
-
-        boardService.savePcShipsToDB(newGame.getSecondPlayerBoard());
 
         gameRepository.save(newGame);
         return dtoMapper.mapToGameDto(newGame);
@@ -104,13 +103,6 @@ public class GameServiceImpl implements GameService {
         return gameRepository.findByPlayer2_idAndGameStateNot(user.getId(), GameState.GAME_IN_PROGRESS);
     }
 
-    /*@Override
-    public Optional<Game> findGameByUsername(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("User with name: " + username + " not found in db"));
-        return gameRepository.findByPlayer1_idOrPlayer2_id(user.getId(), user.getId());
-    }*/
-
     @Override
     public List<Game> getAvailableGames(){
         return gameRepository.findAll();
@@ -129,7 +121,7 @@ public class GameServiceImpl implements GameService {
         User currentUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("User with name: " + username + " not found in db"));
         gameToJoin.setPlayer2(currentUser);
-        gameToJoin.setSecondPlayerBoard(boardService.initializeBoard());
+        gameToJoin.setSecondPlayerBoard(boardService.initializeEmptyBoard());
         gameToJoin.setGameState(GameState.READY_TO_START);
         return gameRepository.save(gameToJoin);
     }
@@ -164,7 +156,17 @@ public class GameServiceImpl implements GameService {
                 .opponentPlayer(getInactivePlayerUsername(currentGame))
                 .currentPlayerBoard(getActivePlayerBoard(currentGame))
                 .opponentPlayerBoard(getInactivePlayerBoard(currentGame))
+                .settings(userService.getUserSettings(currentGame.getPlayer1().getUsername()))
                 .build();
+    }
+
+    @Override
+    public Settings getGameSettings(Long gameId){
+
+        Game currentGame = gameRepository.findById(gameId)
+                .orElseThrow(() -> new EntityNotFoundException("Game with id: " + gameId + " not found in db"));
+
+        return userService.getUserSettings(currentGame.getPlayer1().getUsername());
     }
 
     @Override
@@ -191,5 +193,10 @@ public class GameServiceImpl implements GameService {
 
     private Board getInactivePlayerBoard(Game game){
         return game.getPlayerTurn() == GameTurn.PLAYER2 ? game.getFirstPlayerBoard() : game.getSecondPlayerBoard();
+    }
+
+    private GameTurn getStartingPlayer(GameTurn gameTurn){
+        if(gameTurn == GameTurn.RANDOM) return new Random().nextBoolean() ? GameTurn.PLAYER1 : GameTurn.PLAYER2;
+        else return gameTurn;
     }
 }

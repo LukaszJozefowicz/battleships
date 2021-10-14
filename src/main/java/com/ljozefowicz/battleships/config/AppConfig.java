@@ -3,9 +3,10 @@ package com.ljozefowicz.battleships.config;
 import com.ljozefowicz.battleships.dto.mapper.DtoMapper;
 import com.ljozefowicz.battleships.model.beans.ActiveUsersList;
 import com.ljozefowicz.battleships.model.beans.ActiveGamesList;
-import com.ljozefowicz.battleships.model.beans.PcShipsToAddToDB;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Description;
+import org.springframework.context.support.ResourceBundleMessageSource;
 
 @Configuration
 public class AppConfig {
@@ -25,8 +26,16 @@ public class AppConfig {
         return new ActiveGamesList();
     }
 
+//    @Bean
+//    public ShipsToAddToDB pcShipsToAddToDB() { return new ShipsToAddToDB(); }
+
     @Bean
-    public PcShipsToAddToDB pcShipsToAddToDB() { return new PcShipsToAddToDB(); }
+    @Description("Spring Message Resolver")
+    public ResourceBundleMessageSource messageSource() {
+        ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
+        messageSource.setBasename("messages");
+        return messageSource;
+    }
 
 //    @Bean
 //    public ClassLoaderTemplateResolver secondaryTemplateResolver() {

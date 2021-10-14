@@ -8,37 +8,68 @@
 <nav th:replace="fragments/menu :: menu-bar"></nav>
     <br><br><br>
     <div class="container">
-        <h2>Settings</h2>
-        <form th:action="@{/saveSettings}" method="post">
-            <label for="difficulty">AI difficulty:</label>
-            <select id="difficulty" name="difficulty">
-                <option value="EASY">Easy</option>
-                <option value="NORMAL">Normal</option>
-                <option value="HARD">Hard</option>
-            </select>
-            <div class="btn-group-settings">
+        <div th:if="${param.success}">
+            <div class="alert alert-info">Your settings have been updated successfully</div>
+        </div>
+        <h2>Your settings</h2>
+        <p>Will be applied to any game you create, but not to games you join.</p>
+        <p>Hover over question mark signs for more info.</p>
+        <form th:action="@{/saveSettings}" method="post" th:object="${settings}">
+            <div id = "difficultyDiv" class="form-group" th:switch="${settings.difficulty}">
+                <label for="difficulty">AI difficulty:</label>
+                <select id="difficulty" name="difficulty" onchange="setTooltipInfo(this.value, 'difficultyDiv')">
+                    <option value="EASY" th:selected = "${settings.difficulty == 'EASY'}">Easy</option>
+                    <option value="NORMAL" th:selected = "${settings.difficulty == 'NORMAL'}">Normal</option>
+                    <option value="HARD" th:selected = "${settings.difficulty == 'HARD'}">Hard</option>
+                </select>
+                <i id="difficultyInfoEasy" class="glyphicon glyphicon-question-sign" data-toggle="tooltip" style="font-size: 15px; color: white;" data-html="true" th:case="'EASY'" th:title="#{Tooltip.difficulty.easy}"></i>
+                <i id="difficultyInfoNormal" class="glyphicon glyphicon-question-sign" data-toggle="tooltip" style="font-size: 15px; color: white;" data-html="true" th:case="'NORMAL'" th:title="#{Tooltip.difficulty.normal}"></i>
+                <i id="difficultyInfoHard" class="glyphicon glyphicon-question-sign" data-toggle="tooltip" style="font-size: 15px; color: white;" data-html="true" th:case="'HARD'" th:title="#{Tooltip.difficulty.hard}"></i>
+            </div>
+            <div id = "startingPlayerDiv" class="form-group" th:switch="${settings.startingPlayer}">
+                <label for="startingPlayer">Starting player:</label>
+                <select id="startingPlayer" name="startingPlayer" onchange="setTooltipInfo(this.value, 'startingPlayerDiv')">
+                    <option value="PLAYER1" th:selected = "${settings.startingPlayer == 'PLAYER1'}">Player 1</option>
+                    <option value="PLAYER2" th:selected = "${settings.startingPlayer == 'PLAYER2'}">Player 2</option>
+                    <option value="RANDOM" th:selected = "${settings.startingPlayer == 'RANDOM'}">Random</option>
+                </select>
+                <i id="startingPlayerInfoPlayer1" class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-html="true" style="font-size: 15px; color: white;" th:case="'PLAYER1'" th:title="#{Tooltip.startingPlayer.player1}"></i>
+                <i id="startingPlayerInfoPlayer2" class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-html="true" style="font-size: 15px; color: white;" th:case="'PLAYER2'" th:title="#{Tooltip.startingPlayer.player2}"></i>
+                <i id="startingPlayerInfoRandom" class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-html="true" style="font-size: 15px; color: white;" th:case="'RANDOM'" th:title="#{Tooltip.startingPlayer.random}"></i>
+            </div>
+            <div id = "shipShapeDiv" class="form-group" th:switch="${settings.shipShape}">
+                <label for="shipShape">Shape of ships:</label>
+                <select id="shipShape" name="shipShape" onchange="setTooltipInfo(this.value, 'shipShapeDiv')">
+                    <option value="CLASSIC" th:selected = "${settings.shipShape == 'CLASSIC'}">Classic</option>
+                    <option value="ANY_DIRECTION" th:selected = "${settings.shipShape == 'ANY_DIRECTION'}">Any direction</option>
+                </select>
+                <i id="shipShapeInfoClassic" class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-html="true" style="font-size: 15px; color: white;" th:case="'CLASSIC'" th:title="#{Tooltip.shipShape.classic}"></i>
+                <i id="shipShapeInfoAny" class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-html="true" style="font-size: 15px; color: white;" th:case="'ANY_DIRECTION'" th:title="#{Tooltip.shipShape.anyDirection}"></i>
+            </div>
+
+            <div class="form-group btn-group-settings">
                 <input id="backFromSettings" type="button" class="bold" value="Back" onclick="window.location.href='/'">
-                <input id="saveSettings" type="submit" class="bold" value="Save">
+                <input id="saveSettings" type="submit" class="bold" value="Save" >
             </div>
         </form>
     </div>
-
-
-    <div class="container">
-
-    </div>
-
 
 </body>
 
 <script type="text/javascript" th:src="@{/webjars/jquery/3.6.0/jquery.min.js/}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/3.3.7/js/bootstrap.min.js}"></script>
 <script src="/js/logoutTimeout.js" type="text/javascript"></script>
-<script>
-    window.onload = () => {
-        document.getElementById("backToMenu").style.display = "none";
-        resetTimer();
-        idleLogout();
-    }
+<script src="/js/settings.js" type="text/javascript"></script>
+<script th:inline="javascript">
+
+        const textDiffEasy = [[#{Tooltip.difficulty.easy}]];
+        const textDiffNormal = [[#{Tooltip.difficulty.normal}]];
+        const textDiffHard = [[#{Tooltip.difficulty.hard}]];
+        const textStartingPlayer1 = [[#{Tooltip.startingPlayer.player1}]];
+        const textStartingPlayer2 = [[#{Tooltip.startingPlayer.player2}]];
+        const textStartingPlayerRandom = [[#{Tooltip.startingPlayer.random}]];
+        const textShipShapeClassic = [[#{Tooltip.shipShape.classic}]];
+        const textShipShapeAny = [[#{Tooltip.shipShape.anyDirection}]];
+
 </script>
 </html>

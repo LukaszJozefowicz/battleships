@@ -2,13 +2,14 @@ package com.ljozefowicz.battleships.service.impl;
 
 import com.google.gson.Gson;
 import com.ljozefowicz.battleships.dto.CurrentGameStateDto;
+import com.ljozefowicz.battleships.enums.ShipShape;
+import com.ljozefowicz.battleships.exception.RandomShotException;
 import com.ljozefowicz.battleships.stompMessageObj.ShipPlacementInfo;
 import com.ljozefowicz.battleships.dto.ShipToPlaceDto;
 import com.ljozefowicz.battleships.enums.Direction;
 import com.ljozefowicz.battleships.enums.FieldStatus;
 import com.ljozefowicz.battleships.exception.EntityNotFoundException;
 import com.ljozefowicz.battleships.exception.RandomSetBoardFailedException;
-import com.ljozefowicz.battleships.model.beans.PcShipsToAddToDB;
 import com.ljozefowicz.battleships.model.entity.Board;
 import com.ljozefowicz.battleships.model.entity.Ship;
 import com.ljozefowicz.battleships.repository.BoardRepository;
@@ -16,13 +17,16 @@ import com.ljozefowicz.battleships.repository.ShipRepository;
 import com.ljozefowicz.battleships.service.AllowedShipService;
 import com.ljozefowicz.battleships.service.BoardService;
 import com.ljozefowicz.battleships.stompMessageObj.ShotInfo;
+import com.ljozefowicz.battleships.util.Field;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-//import javax.transaction.Transactional;
 import java.util.*;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 @Service
@@ -32,10 +36,10 @@ public class BoardServiceImpl implements BoardService{
     private final BoardRepository boardRepository;
     private final ShipRepository shipRepository;
     private final AllowedShipService allowedShipService;
-    private PcShipsToAddToDB pcShipsToAddToDB;
 
     @Override
-    public Board initializeBoard() {
+    @Transactional
+    public Board initializeEmptyBoard() {
         FieldStatus[][] fieldStatusArray = new FieldStatus[10][10];
         Arrays.stream(fieldStatusArray).forEach(e -> Arrays.fill(e, FieldStatus.EMPTY));
         Board boardToSave = Board.builder()
@@ -50,6 +54,7 @@ public class BoardServiceImpl implements BoardService{
     }
 
     @Override
+    @Transactional
     public void deleteBoard(Long boardId){
         boardRepository.deleteById(boardId);
     }
@@ -65,7 +70,7 @@ public class BoardServiceImpl implements BoardService{
     }
 
     @Override
-    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRES_NEW)
     public Board updateField(Board board, String coords, FieldStatus fieldStatus) {
         FieldStatus[][] fieldStatusArray = getBoardAsArray(board);
         fieldStatusArray[getRow(coords)][getCol(coords)] = fieldStatus;
@@ -75,13 +80,13 @@ public class BoardServiceImpl implements BoardService{
     }
 
     @Override
-    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRES_NEW)
     public Board addShipField(Board board, ShipPlacementInfo placementInfo){
 
         ShipUtils shipUtils = new ShipUtils();
-        List<Ship> listOfShips = shipRepository.findAllByBoard_id(board.getId()).size() == 0
+        List<Ship> listOfShips = shipRepository.findAllByBoard_idOrderByBoard_idAscIdAsc(board.getId()).size() == 0
                 ? new ArrayList<>()
-                : shipRepository.findAllByBoard_id(board.getId());
+                : shipRepository.findAllByBoard_idOrderByBoard_idAscIdAsc(board.getId());
         String[] fields = listOfShips.size() == 0
                 ? new String[placementInfo.getLength()]
                 : new Gson().fromJson(listOfShips.get(listOfShips.size() - 1).getFields(), String[].class);
@@ -102,7 +107,7 @@ public class BoardServiceImpl implements BoardService{
 
         ShipUtils shipUtils = new ShipUtils();
         FieldStatus[][] fieldStatusArray = getBoardAsArray(board);
-        System.out.println(Arrays.deepToString(fieldStatusArray) + "\n coords:" + coords + "\nstatus: " + fieldStatusArray[getRow(coords)][getCol(coords)].name());
+        //System.out.println(Arrays.deepToString(fieldStatusArray) + "\n coords:" + coords + "\nstatus: " + fieldStatusArray[getRow(coords)][getCol(coords)].name());
 
         switch (fieldStatusArray[getRow(coords)][getCol(coords)]) {
             case SHIP_ALIVE:
@@ -116,7 +121,7 @@ public class BoardServiceImpl implements BoardService{
     }
 
     @Override
-    public ShotInfo setShotInfo(ShotInfo shotInfo, String shotResult, CurrentGameStateDto currentGameState){
+    public ShotInfo getShotInfo(ShotInfo shotInfo, String shotResult, CurrentGameStateDto currentGameState){
 
         ShipUtils shipUtils = new ShipUtils();
         String sunkShipCoords = "";
@@ -142,40 +147,38 @@ public class BoardServiceImpl implements BoardService{
                 .build();
     }
 
-    // ----------------- Board for computer player -----------------
     @Override
     @Transactional
-    public Board initializeComputerBoard() {
+    public Board autoInitializeBoard(ShipShape shipShape, Board existingBoard) {
 
         BoardArrayUtils boardArrayUtils = new BoardArrayUtils();
         final Board boardToSave;
         int retry = 0;
-        FieldStatus[][] fieldStatusArray = boardArrayUtils.initializeComputerBoardArray();
+        List<ShipPlacementInfo> shipsToAdd = new ArrayList<>();
+        FieldStatus[][] fieldStatusArray = boardArrayUtils.autoInitializeBoardArray(shipShape, shipsToAdd);
 
-        while(retry < 20 && fieldStatusArray.length != 10) {    // 20 tries should be enough and not affect performance much
-            fieldStatusArray = boardArrayUtils.initializeComputerBoardArray();
+        while(retry < 50 && fieldStatusArray.length != 10) {    // 50 tries should be enough and not affect performance much
+            System.out.println("---------------------------retry---------------------------: " + retry);
+            fieldStatusArray = boardArrayUtils.autoInitializeBoardArray(shipShape, shipsToAdd);
             retry++;
         }
 
         if(fieldStatusArray.length == 10) {
-
-            boardToSave = Board.builder()
+            if(existingBoard == null){
+                boardToSave = Board.builder()
                     .persistedBoard(new Gson().toJson(fieldStatusArray))
                     .build();
+            } else {
+                existingBoard.setPersistedBoard(new Gson().toJson(fieldStatusArray));
+                boardToSave = existingBoard;
+            }
+
+            for(ShipPlacementInfo ship : shipsToAdd){
+                addShipField(boardToSave, ship);
+            }
+
             return boardRepository.save(boardToSave);
         } else throw new RandomSetBoardFailedException("Initialization of the board for computer player failed");
-    }
-
-    @Override
-    public void savePcShipsToDB(Board board){
-        for(ShipPlacementInfo ship : pcShipsToAddToDB.getShipsToAddToDB()){
-            addShipField(board, ship);
-        }
-    }
-
-    @Override
-    public void clearPcShipsToAddList(){
-        pcShipsToAddToDB.getShipsToAddToDB().clear();
     }
 
     @Override
@@ -196,6 +199,33 @@ public class BoardServiceImpl implements BoardService{
         return validTargetCoords.get(randomCoordIndex);
     }
 
+    @Override
+    public String getRandomTargetPossiblyNearShipHit(FieldStatus[][] fieldStatusArray, ShipShape shipShape){
+
+        BoardArrayUtils boardArrayUtils = new BoardArrayUtils();
+        List<String> shipHitCoords = boardArrayUtils.getShipHitTiles(fieldStatusArray);
+
+        if (shipHitCoords.isEmpty()) return getRandomTarget(fieldStatusArray);
+
+        if(shipShape == ShipShape.CLASSIC){
+            List<String> validTargets = boardArrayUtils.getTargetsIfSureOfDirection(fieldStatusArray, shipHitCoords);
+            if(!validTargets.isEmpty()) {
+//                System.out.println("sure of direction");
+                return validTargets.get(new Random().nextInt(validTargets.size()));
+            }
+        }
+
+        for(String coords : shipHitCoords){
+            Predicate <FieldStatus> isStatusEmptyOrAlive = f -> f == FieldStatus.EMPTY || f == FieldStatus.SHIP_ALIVE;
+            List<Direction> possibleDirections = boardArrayUtils.getDirectionsPossible(fieldStatusArray, coords, isStatusEmptyOrAlive);
+
+            if(possibleDirections.isEmpty()) continue;
+
+            return boardArrayUtils.getNextCoords(coords, possibleDirections, Direction.NO_LOCKED_DIRECTION);
+        }
+        throw new RandomShotException("Something went wrong when choosing random shot coords");
+    }
+
     // ------------------ private ------------------
 
     private int getRow(String coords){
@@ -212,51 +242,43 @@ public class BoardServiceImpl implements BoardService{
 
     private void markNeighborByCoords(int row, int col, FieldStatus[][] fieldStatusArray, FieldStatus fieldStatusToCheck, FieldStatus fieldStatusToSet){
 
+        BiPredicate<Integer, Integer> isInArrayBounds = (aRow, aCol) -> aRow < 10 && aRow >= 0 && aCol < 10 && aCol >= 0;
+        BiPredicate<Integer, Integer> isFieldStatusToCheck = (aRow, aCol) -> fieldStatusArray[aRow][aCol] == fieldStatusToCheck;
         EnumSet<Direction> allDirections = EnumSet.allOf(Direction.class);
+
         for(Direction direction : allDirections) {
             switch (direction) {
+
                 case UP:
-                    if(isInArrayBounds(row - 1)
-                            && fieldStatusArray[row - 1][col] == fieldStatusToCheck){
+                    if(isInArrayBounds.and(isFieldStatusToCheck).test(row - 1, col)){
                         fieldStatusArray[row - 1][col] = fieldStatusToSet;
                     }
                 case DOWN:
-                    if(isInArrayBounds(row + 1)
-                            && fieldStatusArray[row + 1][col] == fieldStatusToCheck){
+                    if(isInArrayBounds.and(isFieldStatusToCheck).test(row + 1, col)){
                         fieldStatusArray[row + 1][col] = fieldStatusToSet;
                     }
                 case LEFT:
-                    if(isInArrayBounds(col - 1)
-                            && fieldStatusArray[row][col - 1] == fieldStatusToCheck){
+                    if(isInArrayBounds.and(isFieldStatusToCheck).test(row, col - 1)){
                         fieldStatusArray[row][col - 1] = fieldStatusToSet;
                     }
                 case RIGHT:
-                    if(isInArrayBounds(col + 1)
-                            && fieldStatusArray[row][col + 1] == fieldStatusToCheck){
+                    if(isInArrayBounds.and(isFieldStatusToCheck).test(row, col + 1)){
                         fieldStatusArray[row][col + 1] = fieldStatusToSet;
                     }
                 case UP_LEFT:
-                    if(isInArrayBounds(row - 1)
-                            && isInArrayBounds(col - 1)
-                            && fieldStatusArray[row - 1][col - 1] == fieldStatusToCheck){
+                    if(isInArrayBounds.and(isFieldStatusToCheck).test(row - 1, col - 1)){
                         fieldStatusArray[row - 1][col - 1] = fieldStatusToSet;
                     }
                 case UP_RIGHT:
-                    if(isInArrayBounds(row - 1)
-                            && isInArrayBounds(col + 1)
-                            && fieldStatusArray[row - 1][col + 1] == fieldStatusToCheck){
+                    if(isInArrayBounds.and(isFieldStatusToCheck).test(row - 1, col + 1)){
                         fieldStatusArray[row - 1][col + 1] = fieldStatusToSet;
                     }
                 case DOWN_LEFT:
-                    if(isInArrayBounds(row + 1)
-                            && isInArrayBounds(col - 1)
-                            && fieldStatusArray[row + 1][col - 1] == fieldStatusToCheck){
+                    if(isInArrayBounds.and(isFieldStatusToCheck).test(row + 1, col - 1)){
                         fieldStatusArray[row + 1][col - 1] = fieldStatusToSet;
                     }
                 case DOWN_RIGHT:
-                    if(isInArrayBounds(row + 1)
-                            && isInArrayBounds(col + 1)
-                            && fieldStatusArray[row + 1][col + 1] == fieldStatusToCheck){
+                    if(isInArrayBounds.and(isFieldStatusToCheck).test(row + 1, col + 1)){
                         fieldStatusArray[row + 1][col + 1] = fieldStatusToSet;
                     }
             }
@@ -267,36 +289,69 @@ public class BoardServiceImpl implements BoardService{
 
     private class BoardArrayUtils {
 
-        private FieldStatus[][] initializeComputerBoardArray() {
+        private FieldStatus[][] autoInitializeBoardArray(ShipShape shipShape, List<ShipPlacementInfo> shipsToAdd) {
 
+            shipsToAdd.clear();
             FieldStatus[][] fieldStatusArray = new FieldStatus[10][10];
             Arrays.stream(fieldStatusArray).forEach(e -> Arrays.fill(e, FieldStatus.EMPTY));
 
             List<ShipToPlaceDto> shipsToPlace = allowedShipService.getListOfShipsToPlace();
+            Direction lockedDirection = Direction.NO_LOCKED_DIRECTION;
 
             for(ShipToPlaceDto shipToPlace : shipsToPlace){
 
-                String coords = getRandomEmptyTile(fieldStatusArray);
+                System.out.println("Ship: " + shipToPlace.getType());
+//                String coords = getRandomEmptyTile(fieldStatusArray);
+                Field initialField = getRandomEmptyTileValidForShip(fieldStatusArray, shipToPlace.getLength());
+                String coords = initialField.getCoords();
+                if(shipShape == ShipShape.CLASSIC){
+                    lockedDirection = initialField.getDirection();
+                }
 
-                for (int i = 0; i < shipToPlace.getLength(); i++) {
+                for (int whichShipField = 0; whichShipField < shipToPlace.getLength(); whichShipField++) {
+                    System.out.println("Tile: " + whichShipField);
+                    System.out.println("locked direction: " + lockedDirection);
+                    System.out.println("coords: " + coords);
+                    Predicate<FieldStatus> isStatusEmpty = f -> f == FieldStatus.EMPTY;
 
-                    List<Direction> possibleDirections = getDirectionsPossible(fieldStatusArray, coords);
+                    List<Direction> possibleDirections = getDirectionsPossible(fieldStatusArray, coords, isStatusEmpty);
 
-                    if(possibleDirections.isEmpty()) {
-                        pcShipsToAddToDB.getShipsToAddToDB().clear();
-                        return new FieldStatus[][]{{FieldStatus.EMPTY}};
-                    } else {
+                    switch (shipShape) {
+                        case ANY_DIRECTION:
+                            if (possibleDirections.isEmpty()) {
+                                shipsToAdd.clear();
+                                return new FieldStatus[][]{{FieldStatus.EMPTY}};
+                            }
+                            break;
+                        case CLASSIC:
+                            if(lockedDirection == Direction.NO_LOCKED_DIRECTION){
+                                shipsToAdd.clear();
+                                return new FieldStatus[][]{{FieldStatus.EMPTY}};
+                            }
+                            break;
+                    }
+//                    if(shipShape == ShipShape.CLASSIC && whichShipField == 0){
+//
+//                        lockedDirection = getLockedDirection(fieldStatusArray, coords, shipToPlace.getLength());
+//                        if(lockedDirection == Direction.NO_LOCKED_DIRECTION){
+//                            shipsToAdd.clear();
+//                            return new FieldStatus[][]{{FieldStatus.EMPTY}};
+//                        }
+//
+//                    }
+//                    if(shipShape == ShipShape.CLASSIC && whichShipField == shipToPlace.getLength() - 1) {
+//                        lockedDirection = Direction.NO_LOCKED_DIRECTION;
+//                    }
 
-                        pcShipsToAddToDB.getShipsToAddToDB().add(ShipPlacementInfo.builder()
+                    shipsToAdd.add(ShipPlacementInfo.builder()
                                 .fieldStatus("SHIP_ALIVE")
                                 .type(shipToPlace.getType())
                                 .length(shipToPlace.getLength())
                                 .coords(coords)
                                 .build());
 
-                        fieldStatusArray[getRow(coords)][getCol(coords)] = FieldStatus.SHIP_ALIVE;
-                        coords = getNextCoords(coords, possibleDirections);
-                    }
+                    fieldStatusArray[getRow(coords)][getCol(coords)] = FieldStatus.SHIP_ALIVE;
+                    coords = getNextCoords(coords, possibleDirections, lockedDirection);
                 }
                 markFieldsAroundPlacedShip(fieldStatusArray, FieldStatus.EMPTY, FieldStatus.AROUND_SHIP);
             }
@@ -311,7 +366,7 @@ public class BoardServiceImpl implements BoardService{
                     .flatMap(Stream::of) //arr -> Arrays.stream(arr)
                     .anyMatch(fieldStatus -> fieldStatus == FieldStatus.EMPTY);
 
-            if(!isAnyEmptyTile) return "error";
+            if(!isAnyEmptyTile) throw new RandomSetBoardFailedException("There are no empty tiles to place a ship on");
 
             while(true) {
                 int row = new Random().nextInt(10);
@@ -321,31 +376,209 @@ public class BoardServiceImpl implements BoardService{
             }
         }
 
-        private List<Direction> getDirectionsPossible(FieldStatus[][] fieldStatusArray, String coords){
+        private Field getRandomEmptyTileValidForShip(FieldStatus[][] fieldStatusArray, int shipLength){
+
+            boolean isAnyEmptyTile = Arrays.stream(fieldStatusArray)
+                    .flatMap(Stream::of) //arr -> Arrays.stream(arr)
+                    .anyMatch(fieldStatus -> fieldStatus == FieldStatus.EMPTY);
+
+            if(!isAnyEmptyTile) throw new RandomSetBoardFailedException("There are no empty tiles to place a ship on");
+
+            int retry = 0;
+
+            while(retry < 100) {
+                System.out.println("retry getRandomTile: " + retry);
+                retry++;
+                int row = new Random().nextInt(10);
+                int col = new Random().nextInt(10);
+                Direction randomValidDirection = getLockedDirection(fieldStatusArray, Integer.toString(row) + col, shipLength);
+                if(fieldStatusArray[row][col] == FieldStatus.EMPTY && randomValidDirection != Direction.NO_LOCKED_DIRECTION)
+                    return Field.builder()
+                        .coords(Integer.toString(row) + col)
+                        .direction(randomValidDirection)
+                        .build();
+            }
+            throw new RandomSetBoardFailedException("Can't find a suitable place for the ship. Try lowering amount of allowed ships in settings.");
+        }
+
+        private List<String> getShipHitTiles(FieldStatus[][] fieldStatusArray){
+
+            List<String> shipHitCoordsList = new ArrayList<>();
+
+            for (int i = 0; i < fieldStatusArray.length; i++) {
+                for (int j = 0; j < fieldStatusArray[i].length; j++) {
+                    if(fieldStatusArray[i][j] == FieldStatus.SHIP_HIT){
+                        shipHitCoordsList.add(Integer.toString(i) + j);
+                    }
+                }
+            }
+            return shipHitCoordsList;
+        }
+
+        private List<String> getTargetsIfSureOfDirection(FieldStatus[][] fieldStatusArray, List<String> shipHitCoords){
+
+            BiPredicate<Integer, Integer> isNextToEachOther = (coord1, coord2) -> coord1 + 1 == coord2;
+            BiPredicate<Integer, Integer> isTheSame = (coord1, coord2) -> coord1 == coord2;
+            BiPredicate<Integer, Integer> isInArrayBounds = (aRow, aCol) -> aRow < 10 && aRow >= 0 && aCol < 10 && aCol >= 0;
+            BiPredicate<Integer, Integer> isEmptyOrAlive = (aRow, aCol) ->
+                    fieldStatusArray[aRow][aCol] == FieldStatus.EMPTY || fieldStatusArray[aRow][aCol] == FieldStatus.SHIP_ALIVE;
+
+            List<String> validTargets = new ArrayList<>();
+
+            for (int i = 1; i < shipHitCoords.size(); i++) {
+
+                int previousRow = getRow(shipHitCoords.get(i - 1));
+                int previousCol = getCol(shipHitCoords.get(i - 1));
+                int currentRow = getRow(shipHitCoords.get(i));
+                int currentCol = getCol(shipHitCoords.get(i));
+
+                if(isNextToEachOther.test(previousRow, currentRow) && isTheSame.test(previousCol, currentCol)) {
+                    if(isInArrayBounds.and(isEmptyOrAlive).test(currentRow + 1, currentCol))
+                        validTargets.add(Integer.toString(currentRow + 1) + currentCol);
+                    if(isInArrayBounds.and(isEmptyOrAlive).test(previousRow - 1, previousCol))
+                        validTargets.add(Integer.toString(previousRow - 1) + previousCol);
+                }
+
+                if(isTheSame.test(previousRow, currentRow) && isNextToEachOther.test(previousCol, currentCol)) {
+                    if(isInArrayBounds.and(isEmptyOrAlive).test(currentRow, currentCol + 1))
+                        validTargets.add(currentRow + Integer.toString(currentCol + 1));
+                    if(isInArrayBounds.and(isEmptyOrAlive).test(previousRow, previousCol - 1))
+                        validTargets.add(previousRow + Integer.toString(previousCol - 1));
+                }
+            }
+
+            //System.out.println("validTargets.size(): " + validTargets.size() + " isEmpty: " + validTargets.isEmpty());
+            return validTargets;
+        }
+
+        private List<Direction> getDirectionsPossible(FieldStatus[][] fieldStatusArray, String coords, Predicate fieldStatusCheck){
 
             int row = getRow(coords);
             int col = getCol(coords);
-
             List<Direction> directionsPossible = new ArrayList<>();
 
-            if(isInArrayBounds(row - 1) && fieldStatusArray[row - 1][col] == FieldStatus.EMPTY){
+            if(!isInArrayBounds(row) || !isInArrayBounds(col)) return directionsPossible;
+
+            if (isInArrayBounds(row - 1) && fieldStatusCheck.test(fieldStatusArray[row - 1][col])) {
                 directionsPossible.add(Direction.UP);
             }
-            if(isInArrayBounds(row + 1) && fieldStatusArray[row + 1][col] == FieldStatus.EMPTY){
+            if (isInArrayBounds(row + 1) && fieldStatusCheck.test(fieldStatusArray[row + 1][col])) {
                 directionsPossible.add(Direction.DOWN);
             }
-            if(isInArrayBounds(col - 1) && fieldStatusArray[row][col - 1] == FieldStatus.EMPTY){
+            if (isInArrayBounds(col - 1) && fieldStatusCheck.test(fieldStatusArray[row][col - 1])) {
                 directionsPossible.add(Direction.LEFT);
             }
-            if(isInArrayBounds(col + 1) && fieldStatusArray[row][col + 1] == FieldStatus.EMPTY){
+            if (isInArrayBounds(col + 1) && fieldStatusCheck.test(fieldStatusArray[row][col + 1])) {
                 directionsPossible.add(Direction.RIGHT);
             }
             return directionsPossible;
         }
 
-        private String getNextCoords(String coords, List<Direction> possibleDirections){
+        private Direction getLockedDirection(FieldStatus[][] fieldStatusArray, String coords, int shipLength){
 
-            Direction randomDirection = possibleDirections.get(new Random().nextInt(possibleDirections.size()));
+            int row = getRow(coords);
+            int col = getCol(coords);
+
+            List<Direction> directionsPossible = new ArrayList<>(List.of(Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT));
+
+            for(int i = 0; i < shipLength; i++){
+                if(!isInArrayBounds(row - shipLength) ||
+                        (fieldStatusArray[row - i][col] != FieldStatus.EMPTY && directionsPossible.contains(Direction.UP)))
+                    directionsPossible.remove(Direction.UP);
+                if(!isInArrayBounds(row + shipLength) ||
+                        (fieldStatusArray[row + i][col] != FieldStatus.EMPTY  && directionsPossible.contains(Direction.DOWN)))
+                    directionsPossible.remove(Direction.DOWN);
+                if(!isInArrayBounds(col - shipLength) ||
+                        (fieldStatusArray[row][col - i] != FieldStatus.EMPTY && directionsPossible.contains(Direction.LEFT)))
+                    directionsPossible.remove(Direction.LEFT);
+                if(!isInArrayBounds(col + shipLength) ||
+                        (fieldStatusArray[row][col + i] != FieldStatus.EMPTY && directionsPossible.contains(Direction.RIGHT)))
+                    directionsPossible.remove(Direction.RIGHT);
+            }
+
+            System.out.println("getLockedDirection row: " + row + " col: " + col + " shipLength: " + shipLength);
+            System.out.println("possibleDirections: " + Arrays.toString(directionsPossible.toArray()));
+//            if(isInArrayBounds(row - shipLength)){
+//                for(int i = 0; i < shipLength; i++){
+//                    if(!fieldStatusCheck.test(fieldStatusArray[row - i][col]))
+//                        break;
+//                    if(i == shipLength - 1)
+//                        directionsPossible.add(Direction.UP);
+//                }
+//            }
+//
+//            if(isInArrayBounds(row + shipLength)){
+//                for(int i = 0; i < shipLength; i++){
+//                    if(!fieldStatusCheck.test(fieldStatusArray[row + i][col]))
+//                        break;
+//                    if(i == shipLength - 1)
+//                        directionsPossible.add(Direction.DOWN);
+//                }
+//            }
+//
+//            if(isInArrayBounds(col - shipLength)){
+//                for(int i = 0; i < shipLength; i++){
+//                    if(!fieldStatusCheck.test(fieldStatusArray[row][col - i]))
+//                        break;
+//                    if(i == shipLength - 1)
+//                        directionsPossible.add(Direction.LEFT);
+//                }
+//            }
+//
+//            if(isInArrayBounds(col + shipLength)){
+//                for(int i = 0; i < shipLength; i++){
+//                    if(!fieldStatusCheck.test(fieldStatusArray[row][col + i]))
+//                        break;
+//                    if(i == shipLength - 1)
+//                        directionsPossible.add(Direction.RIGHT);
+//                }
+//            }
+
+            if(!directionsPossible.isEmpty()) {
+                return directionsPossible.get(new Random().nextInt(directionsPossible.size()));
+            } else {
+                return Direction.NO_LOCKED_DIRECTION;
+            }
+
+        }
+
+        private Direction addDirection(FieldStatus[][] fieldStatusArray, List<Direction> directionsPossible, String coords, int shipLength, Direction direction){
+
+            int row = getRow(coords);
+            int col = getCol(coords);
+            int coord;
+
+            switch(direction){
+                case UP:
+                    shipLength *= -1;
+                    coord = row;
+            }
+
+            if(isInArrayBounds(row - shipLength)){
+                for(int i = 0; i < shipLength; i++){
+                    if(fieldStatusArray[row - i][col] != FieldStatus.EMPTY){
+                        break;
+                    }
+                    if(i == shipLength - 1){
+                        directionsPossible.add(Direction.UP);
+                    }
+                }
+            }
+            return Direction.NO_LOCKED_DIRECTION;
+        }
+
+        private String getNextCoords(String coords, List<Direction> possibleDirections, Direction lockedDirection){
+
+//            Direction randomDirection = possibleDirections.get(new Random().nextInt(possibleDirections.size()));
+
+            final Direction randomDirection;
+
+            if(lockedDirection != Direction.NO_LOCKED_DIRECTION) {
+                randomDirection = lockedDirection;
+            } else {
+                randomDirection = possibleDirections.get(new Random().nextInt(possibleDirections.size()));
+            }
+
             switch (randomDirection){
                 case UP:
                     return Integer.toString(getRow(coords) - 1) + getCol(coords);
@@ -487,25 +720,39 @@ public class BoardServiceImpl implements BoardService{
 
     /*public static void main(String[] args) {
 
-        FieldStatus[][] fieldStatusArray = new FieldStatus[][]{
-                {FieldStatus.EMPTY, FieldStatus.EMPTY, FieldStatus.EMPTY, FieldStatus.SHIP_ALIVE},
-                {FieldStatus.AROUND_SHIP, FieldStatus.SHIP_ALIVE, FieldStatus.EMPTY, FieldStatus.EMPTY},
-                {FieldStatus.SHIP_ALIVE, FieldStatus.EMPTY, FieldStatus.SHIP_ALIVE, FieldStatus.SHIP_ALIVE},
-                {FieldStatus.EMPTY, FieldStatus.AROUND_SHIP, FieldStatus.MISS, FieldStatus.AROUND_SHIP}
-        };
-        System.out.println(Arrays.deepToString(fieldStatusArray));
+//        FieldStatus[][] fieldStatusArray = new FieldStatus[][]{
+//                {FieldStatus.EMPTY, FieldStatus.EMPTY, FieldStatus.EMPTY, FieldStatus.SHIP_ALIVE},
+//                {FieldStatus.AROUND_SHIP, FieldStatus.SHIP_ALIVE, FieldStatus.EMPTY, FieldStatus.EMPTY},
+//                {FieldStatus.SHIP_ALIVE, FieldStatus.EMPTY, FieldStatus.SHIP_ALIVE, FieldStatus.SHIP_ALIVE},
+//                {FieldStatus.EMPTY, FieldStatus.AROUND_SHIP, FieldStatus.MISS, FieldStatus.AROUND_SHIP}
+//        };
+//        System.out.println(Arrays.deepToString(fieldStatusArray));
+//
+//        FieldStatus[][] arr = Arrays.stream(fieldStatusArray)
+//                .map(Stream::of)
+//                .map(str -> str
+//                        .map(FieldStatus::setEmptyIfAroundShip)
+//                        .toArray(FieldStatus[]::new))
+//                .toArray(FieldStatus[][]::new);
+//
+//        System.out.println(Arrays.deepToString(arr));
+//        System.out.println(Arrays.stream(fieldStatusArray)
+//                .flatMap(Stream::of)
+//                .filter(field -> field == FieldStatus.SHIP_ALIVE)
+//                .count());
+        for (int i = 0; i < 1000; i++) {
 
-        FieldStatus[][] arr = Arrays.stream(fieldStatusArray)
-                .map(Stream::of)
-                .map(str -> str
-                        .map(FieldStatus::setEmptyIfAroundShip)
-                        .toArray(FieldStatus[]::new))
-                .toArray(FieldStatus[][]::new);
 
-        System.out.println(Arrays.deepToString(arr));
-        System.out.println(Arrays.stream(fieldStatusArray)
-                .flatMap(Stream::of)
-                .filter(field -> field == FieldStatus.SHIP_ALIVE)
-                .count());
+            List<Integer> list = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+            int random = new Random().nextInt(list.size());
+            Set<Integer> set = list.stream()
+                    .collect(Collectors.toSet());
+
+            Integer result = set.stream()
+                    .skip(random)
+                    .findFirst()
+                    .get();
+            System.out.println("random nb to skip: " + random + " result: " + result);
+        }
     }*/
 }

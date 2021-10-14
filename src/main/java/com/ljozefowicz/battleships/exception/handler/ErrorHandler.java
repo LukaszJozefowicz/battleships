@@ -11,5 +11,6 @@ public class ErrorHandler {
         public String handleSetBoardFailureException(Exception exception){
 
         return "setBoardError";
+//        return "redirect:/setBoardError";
     }
 }

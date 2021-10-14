@@ -1,6 +1,9 @@
 package com.ljozefowicz.battleships.service.impl;
 
+import com.ljozefowicz.battleships.dto.SettingsDto;
 import com.ljozefowicz.battleships.dto.UserRegistrationDto;
+import com.ljozefowicz.battleships.dto.mapper.DtoMapper;
+import com.ljozefowicz.battleships.exception.EntityNotFoundException;
 import com.ljozefowicz.battleships.model.entity.Game;
 import com.ljozefowicz.battleships.model.entity.Role;
 import com.ljozefowicz.battleships.model.entity.Settings;
@@ -27,17 +30,18 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final SettingsRepository settingsRepository;
     private final BCryptPasswordEncoder encoder;
+    private final DtoMapper dtoMapper;
 
     @Override
-    public User saveUser(UserRegistrationDto userRegistrationDto, UserRole userRole) {
+    public User saveUser(UserRegistrationDto userRegistrationDto, UserRole userRole, User masterUser) {
 
         if (userRole.name().contains("BOT")){
-            String randomIntString = Integer.toString(new Random().nextInt(1000) + 1000);
-            userRegistrationDto.setUsername(userRole.getRoleName() + randomIntString);
+            String randomIntString = Integer.toString(new Random().nextInt(10000) + 10000);
+            userRegistrationDto.setUsername("Bot" + masterUser.getSettings().getDifficulty().getNameCamelCase() + randomIntString);
             userRegistrationDto.setPassword(randomIntString);
             userRegistrationDto.setConfirmPassword(randomIntString);
-            userRegistrationDto.setEmail(userRole.getRoleName() + randomIntString + "@" + randomIntString + ".pl");
-            userRegistrationDto.setConfirmEmail(userRole.getRoleName() + randomIntString + "@" + randomIntString + ".pl");
+            userRegistrationDto.setEmail("Bot" + randomIntString + "@" + randomIntString + ".pl");
+            userRegistrationDto.setConfirmEmail("Bot" + randomIntString + "@" + randomIntString + ".pl");
         }
 
         User user = new User(userRegistrationDto.getUsername(),
@@ -70,15 +74,24 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User saveUserSettings(String username, Settings settings){
+    public User saveUserSettings(String username, SettingsDto settingsDto){
         User user = findByUsername(username).get();
 
-        settingsRepository.findByDifficulty(settings.getDifficulty())
+        Settings settings = dtoMapper.mapToSettings(settingsDto);
+        settingsRepository.findByDifficultyAndStartingPlayerAndShipShape(settings.getDifficulty(), settings.getStartingPlayer(), settings.getShipShape())
                 .ifPresentOrElse(s -> user.setSettings(s),
                 () -> {
                     Settings newSettings = settingsRepository.save(settings);
                     user.setSettings(newSettings);
                 });
         return userRepository.save(user);
+    }
+
+    @Override
+    public Settings getUserSettings(String username){
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("Username: " + username + " not found in DB"));
+
+        return user.getSettings();
     }
 }

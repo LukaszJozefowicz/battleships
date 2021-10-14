@@ -6,12 +6,12 @@ import lombok.Data;
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
-public class PcShipsToAddToDB {
-
-    private List<ShipPlacementInfo> shipsToAddToDB;
-
-    public PcShipsToAddToDB() {
-        shipsToAddToDB = new ArrayList<>();
-    }
-}
+//@Data
+//public class ShipsToAddToDB {
+//
+//    private List<ShipPlacementInfo> shipsToAddToDB;
+//
+//    public ShipsToAddToDB() {
+//        shipsToAddToDB = new ArrayList<>();
+//    }
+//}

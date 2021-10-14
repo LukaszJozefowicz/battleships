@@ -1,14 +1,15 @@
 /* vars from th:inline script tag in boards.html
 
-        var shipsToPlace = JSON.parse([[${shipsToPlace}]]);
-        var opponentName = [[${opponentName}]];
-        var isGameVsPC = opponentName.includes("BotEasy") || opponentName.includes("BotNormal") || opponentName.includes("BotHard");
+        const shipsToPlace = JSON.parse([[${shipsToPlace}]]);
+        const settings = JSON.parse([[${settings}]]);
+        const opponentName = [[${opponentName}]];
+        const isGameVsPC = opponentName.includes("BotEasy") || opponentName.includes("BotNormal") || opponentName.includes("BotHard");
 
 */
 
 class ShipsSetupUtils {
 
-    static resetBoard(){
+    static resetBoard(sendWithoutMsg){
         this.whichShip = 0;
         this.whichFieldOfShip  = 1;
         var cells = document.querySelectorAll("#boardTable .my-btn");
@@ -41,7 +42,8 @@ class ShipsSetupUtils {
         document.getElementById("shipPlacingInfo").innerHTML = "Ship Placement phase."
                             + "<br>Place ships by clicking."
                             + "<br>Longest ships first.";
-        sendResetBoard();
+        if(sendWithoutMsg === undefined)
+            sendResetBoard();
     }
 
     static setShipPlacementInfo(){
@@ -102,32 +104,38 @@ class ShipsSetupUtils {
 
     static setShip(clickedCell){
 
-            this.setShipPlacementInfo();
+            if(settings.shipShape === "CLASSIC")
+                ShipsSetupUtils.setDirection(clickedCell);
+
+            ShipsSetupUtils.setShipPlacementInfo();
             clickedCell.style.backgroundColor = "#0000cd"; //ship placed color
             clickedCell.disabled=true;
             clickedCell.setAttribute('fieldstatus', 'shipPlaced');
 
-            this.highlightNeighbors();
+//            let lockedDirection = undefined;
 
-            if(this.whichFieldOfShip === 1){
-                this.disableFieldsAroundPlacedShip();
+            ShipsSetupUtils.highlightNeighbors(ShipsSetupUtils.lockedDirection);
+
+            if(ShipsSetupUtils.whichFieldOfShip === 1){
+                ShipsSetupUtils.disableFieldsAroundPlacedShip();
             }
 
-            if(this.whichShip === shipsToPlace.length){
-                this.disableAllCells();
-                this.setUpForGameStart();
-                if(this.isOpponentReady || isGameVsPC)
+            if(ShipsSetupUtils.whichShip === shipsToPlace.length){
+                ShipsSetupUtils.lockedDirection = undefined;
+//                ShipsSetupUtils.disableAllCells();
+                ShipsSetupUtils.setUpForGameStart();
+                if(ShipsSetupUtils.isOpponentReady || isGameVsPC)
                     ShotUtils.startShootingPhase();
             }
     }
 
-    static highlightNeighbors(){
+    static highlightNeighbors(lockedDirection){
         var cells = document.querySelectorAll("#boardTable .my-btn");
         var placedShips = document.querySelectorAll(".my-btn[fieldstatus='shipPlaced']");
 
             placedShips.forEach(shipCell => {
                 cells.forEach(cell => {
-                    if(this.isNeighbor(cell, shipCell) && cell.getAttribute('fieldstatus') === "empty" && this.whichFieldOfShip != 1){
+                    if(this.isNeighbor(cell, shipCell, lockedDirection) && cell.getAttribute('fieldstatus') === "empty" && this.whichFieldOfShip != 1){
                         cell.style.backgroundColor = "#6495ed";  //highlighted neighbor
                         cell.disabled = false;
                         cell.setAttribute('fieldstatus', 'highlighted');
@@ -139,6 +147,17 @@ class ShipsSetupUtils {
                     }
                 });
             });
+    }
+
+    static setHighlightedToEmpty(){
+        var cells = document.querySelectorAll("#boardTable .my-btn");
+        cells.forEach(cell => {
+            if(cell.getAttribute('fieldstatus') === "highlighted"){
+                cell.setAttribute('fieldstatus', 'empty');
+                cell.style.backgroundColor = "#add8e6";     //default color
+                cell.disabled=true;
+            }
+        });
     }
 
     static disableFieldsAroundPlacedShip(){
@@ -163,18 +182,19 @@ class ShipsSetupUtils {
         });
     }
 
-    static disableAllCells(){
-        var cells = document.querySelectorAll("#boardTable .my-btn");
-
-        cells.forEach(cell => {
-            cell.disabled=true;
-        })
-    }
+//    static disableAllCells(){
+//        var cells = document.querySelectorAll("#boardTable .my-btn");
+//
+//        cells.forEach(cell => {
+//            cell.disabled=true;
+//        })
+//    }
 
     static setUpForGameStart(){
         var cells = document.querySelectorAll("#boardTable .my-btn");
 
         cells.forEach(cell => {
+            cell.disabled=true;
             if(cell.getAttribute('fieldstatus') === "aroundShip"){
                 cell.setAttribute('fieldstatus', 'empty');
                 cell.style.backgroundColor = "#add8e6"
@@ -187,14 +207,29 @@ class ShipsSetupUtils {
         randomizeButton.remove();
     }
 
-    static isNeighbor(cell, button){
-        if( (this.isNeighborRight(cell, button)
-            || this.isNeighborLeft(cell, button)
-            || this.isNeighborDown(cell, button)
-            || this.isNeighborUp(cell, button))
-            && cell.getAttribute('fieldstatus') === "empty")
-                return true;
-            else return false;
+    static isNeighbor(cell, button, lockedDirection){
+        switch(lockedDirection){
+            case 'VERTICAL' :
+               if( (this.isNeighborDown(cell, button)
+                    || this.isNeighborUp(cell, button))
+                    && cell.getAttribute('fieldstatus') === "empty")
+                        return true;
+               else return false;
+            case 'HORIZONTAL' :
+               if( (this.isNeighborRight(cell, button)
+                    || this.isNeighborLeft(cell, button))
+                    && cell.getAttribute('fieldstatus') === "empty")
+                        return true;
+               else return false;
+            default:
+                if( (this.isNeighborRight(cell, button)
+                    || this.isNeighborLeft(cell, button)
+                    || this.isNeighborDown(cell, button)
+                    || this.isNeighborUp(cell, button))
+                    && cell.getAttribute('fieldstatus') === "empty")
+                        return true;
+                else return false;
+        }
     }
 
     static isNeighborDiagonally(cell, button){
@@ -252,35 +287,79 @@ class ShipsSetupUtils {
             && parseInt(button.id.substring(1,2)) - 1 >= 0
     }
 
-    static setAllShipsRandomly(){
-                document.getElementById("reset").disabled = true;
-                document.getElementById("randomPlacement").disabled = true;
+    static setDirection(clickedCell){
+        if(this.whichFieldOfShip === 2){
+            this.setHighlightedToEmpty();
+            var cells = document.querySelectorAll("#boardTable .my-btn");
 
-                var cells = document.querySelectorAll("#boardTable .my-btn");
-                var activeCells = [];
-
-                cells.forEach(cell => {
-                    if(cell.disabled === false){
-                        activeCells.push(cell);
-                    }
-                });
-
-                if(activeCells.length === 0){
-                    this.resetBoard();
-                    ShipsSetupUtils.setAllShipsRandomly();
+            cells.forEach(cell => {
+                if( (this.isNeighborLeft(cell, clickedCell) || this.isNeighborRight(cell, clickedCell))
+                    && cell.getAttribute('fieldstatus') === "shipPlaced"){
+                        this.lockedDirection = "HORIZONTAL";
+                } else if( (this.isNeighborUp(cell, clickedCell) || this.isNeighborDown(cell, clickedCell))
+                    && cell.getAttribute('fieldstatus') === "shipPlaced"){
+                        this.lockedDirection = "VERTICAL";
                 }
-
-                var randomCell = activeCells[Math.floor(Math.random() * activeCells.length)];
-                let col = parseInt(randomCell.id.substring(0,1));
-                let row = parseInt(randomCell.id.substring(1,2));
-                sendPlaceShipTile(col, row);
-                ShipsSetupUtils.setShip(randomCell);
-                if(ShipsSetupUtils.whichShip < shipsToPlace.length){
-                    setTimeout(ShipsSetupUtils.setAllShipsRandomly, 500);
-                }
+            });
+        } else if(this.whichFieldOfShip === 1){
+            this.lockedDirection = undefined;
+        }
     }
+
+    static setAllShipsRandomly(payloadBody){
+        this.resetBoard(true);
+
+        let newBoard = payloadBody;
+        for(let i = 0; i < newBoard.length; i++){
+            for(let j = 0; j < newBoard[i].length; j++){
+                if(newBoard[i][j] == "SHIP_ALIVE"){
+                    let cell = document.querySelector("#" + CSS.escape("" + i + j));
+                    cell.setAttribute('fieldstatus', 'shipPlaced');
+                    cell.style.backgroundColor = "#0000cd";
+                }
+            }
+        }
+
+        this.areYouReady = true;
+        sendPlacementInfoToOpponent("", "", "true");
+        document.getElementById("shipPlacingInfo").className = "red";
+        document.getElementById("shipPlacingInfo").innerHTML = "Your board is ready";
+        this.setUpForGameStart();
+        if(this.isOpponentReady || isGameVsPC){
+            ShotUtils.startShootingPhase();
+        }
+    }
+
+//    static setAllShipsRandomly(){
+//                document.getElementById("reset").disabled = true;
+//                document.getElementById("randomPlacement").disabled = true;
+//
+//                var cells = document.querySelectorAll("#boardTable .my-btn");
+//                var activeCells = [];
+//
+//                cells.forEach(cell => {
+//                    if(cell.disabled === false){
+//                        activeCells.push(cell);
+//                    }
+//                });
+//
+//                if(activeCells.length === 0){
+//                    ShipsSetupUtils.resetBoard();
+//                    ShipsSetupUtils.setAllShipsRandomly();
+//                }
+//
+//                var randomCell = activeCells[Math.floor(Math.random() * activeCells.length)];
+//                let col = parseInt(randomCell.id.substring(0,1));
+//                let row = parseInt(randomCell.id.substring(1,2));
+//                sendPlaceShipTile(col, row);
+//                ShipsSetupUtils.setShip(randomCell);
+//                if(ShipsSetupUtils.whichShip < shipsToPlace.length){
+//                    setTimeout(ShipsSetupUtils.setAllShipsRandomly, 500);
+//                }
+//    }
 }
 ShipsSetupUtils.areYouReady = false;
 ShipsSetupUtils.isOpponentReady = false;
 ShipsSetupUtils.whichShip = 0;
 ShipsSetupUtils.whichFieldOfShip  = 1;
+ShipsSetupUtils.lockedDirection = undefined;

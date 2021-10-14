@@ -5,6 +5,7 @@ import com.ljozefowicz.battleships.dto.CurrentGameStateDto;
 import com.ljozefowicz.battleships.dto.mapper.DtoMapper;
 import com.ljozefowicz.battleships.enums.FieldStatus;
 import com.ljozefowicz.battleships.enums.GameTurn;
+import com.ljozefowicz.battleships.enums.UserRole;
 import com.ljozefowicz.battleships.model.beans.ActiveGamesList;
 import com.ljozefowicz.battleships.model.entity.Board;
 import com.ljozefowicz.battleships.service.AllowedShipService;
@@ -43,7 +44,7 @@ public class NewGameController {
     DtoMapper dtoMapper;
 
     @GetMapping("/newGame/{gameId}")
-    public String createNewGame(Model model, @PathVariable Long gameId, Principal principal){
+    public String getNewGameScreen(Model model, @PathVariable Long gameId, Principal principal){
         gameService.findGameById(gameId).ifPresent(game -> {
             FieldStatus[][] playerBoardAsArray = principal.getName().equals(game.getPlayer1().getUsername())
                                 ? boardService.getBoardAsArray(game.getFirstPlayerBoard())
@@ -63,6 +64,7 @@ public class NewGameController {
             model.addAttribute("opponentName", principal.getName().equals(game.getPlayer1().getUsername())
                                                     ? game.getPlayer2().getUsername()
                                                     : game.getPlayer1().getUsername());
+            model.addAttribute("settings", new Gson().toJson(dtoMapper.mapToSettingsDto(userService.getUserSettings(game.getPlayer1().getUsername()))));
         });
         return "new-game";
     }
@@ -96,6 +98,26 @@ public class NewGameController {
         messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/resetBoard/" + gameId, message);
     }
 
+    @MessageMapping("/autoPlacement/{gameId}")
+    public void autoFillBoard(Principal principal, @DestinationVariable Long gameId){
+
+//        gameService.findGameById(gameId).ifPresent(currentGame -> {
+//            ShipShape shipShape = currentGame.getSettings().getShipShape();
+//            Board currentBoard = gameService.getBoardByUsername(gameId, principal.getName());
+//            boardService.resetBoard(currentBoard);
+//            currentBoard = boardService.autoInitializeBoard(shipShape, currentBoard);
+//
+//            FieldStatus[][] fieldStatusArray = boardService.getBoardAsArray(currentBoard);
+//            messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/autoPlacement/" + gameId, new Gson().toJson(fieldStatusArray));
+//        });
+        Board currentBoard = gameService.getBoardByUsername(gameId, principal.getName());
+        boardService.resetBoard(currentBoard);
+        currentBoard = boardService.autoInitializeBoard(gameService.getGameSettings(gameId).getShipShape(), currentBoard);
+
+        FieldStatus[][] fieldStatusArray = boardService.getBoardAsArray(currentBoard);
+        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/autoPlacement/" + gameId, new Gson().toJson(fieldStatusArray));
+    }
+
     @MessageMapping("/gameChat/{gameId}")
     @SendTo("/sendInfoMessage/{gameId}")
     public Message sendChatMessage(Message messageObj){
@@ -127,13 +149,21 @@ public class NewGameController {
 
         CurrentGameStateDto currentGameState = gameService.getCurrentGameState(gameId);
 
-        if(isBot(currentGameState.getCurrentPlayer())){
-            shotInfo.setCoords(boardService.getRandomTarget(boardService.getBoardAsArray(currentGameState.getOpponentPlayerBoard())));
+        if(UserRole.isBot(currentGameState.getCurrentPlayer())){
+            switch (currentGameState.getSettings().getDifficulty()){
+                case EASY:
+                    shotInfo.setCoords(boardService.getRandomTarget(boardService.getBoardAsArray(currentGameState.getOpponentPlayerBoard())));
+                    break;
+                case NORMAL:
+                case HARD:
+                    shotInfo.setCoords(boardService.getRandomTargetPossiblyNearShipHit(boardService.getBoardAsArray(currentGameState.getOpponentPlayerBoard()), currentGameState.getSettings().getShipShape()));
+                    break;
+            }
         }
 
         String shotResult = boardService.getShotResult(currentGameState.getOpponentPlayerBoard(), shotInfo.getCoords());
         boardService.updateField(currentGameState.getOpponentPlayerBoard(), shotInfo.getCoords(), FieldStatus.valueOf(shotResult));
-        shotInfo = boardService.setShotInfo(shotInfo, shotResult, currentGameState);
+        shotInfo = boardService.getShotInfo(shotInfo, shotResult, currentGameState);
 
         if(!shotInfo.isAllShipsSunk())
             gameService.switchTurns(gameId);

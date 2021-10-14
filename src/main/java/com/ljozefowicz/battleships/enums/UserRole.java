@@ -1,35 +1,29 @@
 package com.ljozefowicz.battleships.enums;
 
-import java.util.List;
+import java.util.EnumSet;
 
 public enum UserRole {
 
-    ROLE_USER(1L, "USER"),
-    ROLE_ADMIN(2L, "ADMIN"),
-    ROLE_BOT_EASY(3L, "BotEasy"),
-    ROLE_BOT_NORMAL(4L, "BotNormal"),
-    ROLE_BOT_HARD(5L, "BotHard");
-
+    ROLE_USER(1L),
+    ROLE_ADMIN(2L),
+    ROLE_BOT(3L);
 
     private final Long id;
-    private final String roleName;
-    private static final List<String> botNames = List.of("BotEasy", "BotNormal", "BotHard");;
 
-    UserRole(Long id, String roleName) {
+    UserRole(Long id) {
         this.id = id;
-        this.roleName = roleName;
     }
 
     public Long getId() {
         return id;
     }
 
-    public String getRoleName() {
-        return roleName;
+    public static boolean isBot(String name){
+        boolean isNameContainsDifficulty = EnumSet.allOf(Difficulty.class)
+                .stream()
+                .anyMatch(difficulty -> name.contains(difficulty.getNameCamelCase()));
+
+        return name.contains("Bot") && isNameContainsDifficulty;
     }
 
-    public static boolean isBot(String name){
-        return botNames.stream()
-                .anyMatch(botName -> name.contains(botName));
-    }
 }

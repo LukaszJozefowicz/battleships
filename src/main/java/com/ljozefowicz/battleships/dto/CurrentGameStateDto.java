@@ -1,6 +1,7 @@
 package com.ljozefowicz.battleships.dto;
 
 import com.ljozefowicz.battleships.model.entity.Board;
+import com.ljozefowicz.battleships.model.entity.Settings;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,4 +16,5 @@ public class CurrentGameStateDto {
     String opponentPlayer;
     Board currentPlayerBoard;
     Board opponentPlayerBoard;
+    Settings settings;
 }

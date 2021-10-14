@@ -90,6 +90,10 @@ class GameLobbyUtils {
                     } else {
                         document.getElementById('gameStartInfo').style.visibility = "hidden";
                     }
+
+                    if(!this.isPlayerJoinedGame && !this.isPlayerCreatedGame){
+                        this.setNewGameButtons(false);
+                    }
     }
 
     static setInputFieldProperties(element, type, value, className, onclickValue){

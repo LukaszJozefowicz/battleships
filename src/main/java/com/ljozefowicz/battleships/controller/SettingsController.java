@@ -1,11 +1,11 @@
 package com.ljozefowicz.battleships.controller;
 
-import com.ljozefowicz.battleships.enums.Difficulty;
-import com.ljozefowicz.battleships.model.entity.Settings;
-import com.ljozefowicz.battleships.repository.SettingsRepository;
+import com.ljozefowicz.battleships.dto.SettingsDto;
+import com.ljozefowicz.battleships.dto.mapper.DtoMapper;
 import com.ljozefowicz.battleships.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 
@@ -15,23 +15,22 @@ import java.security.Principal;
 @AllArgsConstructor
 public class SettingsController {
 
-    private final SettingsRepository settingsRepository;
+    private final DtoMapper dtoMapper;
     private final UserService userService;
 
     @GetMapping("/gameSettings")
-    public String getSettingsPage(){
+    public String getSettingsPage(Model model, Principal principal){
+        SettingsDto settingsDto = dtoMapper.mapToSettingsDto(userService.getUserSettings(principal.getName()));
+
+        model.addAttribute("settings", settingsDto);
         return "settings";
     }
 
     @PostMapping("/saveSettings")
-    public String saveSettings(String difficulty, Principal principal){
-        Settings settings = Settings.builder()
-                .difficulty(Difficulty.valueOf(difficulty))
-                .build();
+    public String saveSettings(SettingsDto settings, Principal principal){
 
-        //settingsRepository.save(settings);
         userService.saveUserSettings(principal.getName(), settings);
 
-        return "redirect:/";
+        return "redirect:/gameSettings?success";
     }
 }

@@ -62,6 +62,11 @@ function connect(){
             client.subscribe("/user/queue/resetBoard/" + gameId, payload => {
             });
 
+            client.subscribe("/user/queue/autoPlacement/" + gameId, payload => {
+                 var payloadBody = JSON.parse(payload.body);
+                 ShipsSetupUtils.setAllShipsRandomly(payloadBody);
+            });
+
             client.subscribe("/sendInfoMessage/" + gameId, payload => {
                      payloadBody = JSON.parse(payload.body);
 
@@ -132,6 +137,11 @@ function sendPlaceShipTile(x, y){
 function sendResetBoard(){
 
     client.send('/ws/resetBoard/' + gameId, {}, JSON.stringify({"messageType": "resetBoard", "username":"username", "message": "resetBoard"}));
+}
+
+function sendAutoPlacement(){
+
+    client.send('/ws/autoPlacement/' + gameId, {}, JSON.stringify({"messageType": "autoPlacement", "username":"username", "message": "autoPlacement"}));
 }
 
 function sendPlacementInfoToOpponent(shipName, whichOfAKind, isAllShipsPlaced){

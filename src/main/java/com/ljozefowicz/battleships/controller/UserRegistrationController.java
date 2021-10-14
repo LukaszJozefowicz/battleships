@@ -45,8 +45,7 @@ public class UserRegistrationController {
             return "registration";
         }
 
-
-        userService.saveUser(userRegistrationDto, UserRole.ROLE_USER);
+        userService.saveUser(userRegistrationDto, UserRole.ROLE_USER, null);
         return "redirect:/register?success";
     }
 }

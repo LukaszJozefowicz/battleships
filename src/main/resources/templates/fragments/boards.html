@@ -28,7 +28,7 @@
         </tbody>
     </table>
         <button type="button" id="reset" onclick="ShipsSetupUtils.resetBoard()">Reset board</button>
-        <button type="button" id="randomPlacement" onclick="ShipsSetupUtils.setAllShipsRandomly()">Auto-placement</button>
+        <button type="button" id="randomPlacement" onclick="sendAutoPlacement()">Auto-placement</button>
         <h5 id="shipPlacingInfo">Ship Placement phase.
             <br>Place ships by clicking.
             <br>Longest ships first.</h5>
@@ -68,6 +68,7 @@
 <!--    Global vars for .js scripts   -->
     <script th:inline="javascript">
         const shipsToPlace = JSON.parse([[${shipsToPlace}]]);
+        const settings = JSON.parse([[${settings}]]);
         const startingPlayer = [[${startingPlayer}]];
         const opponentName = [[${opponentName}]];
         const isGameVsPC = opponentName.includes("BotEasy") || opponentName.includes("BotNormal") || opponentName.includes("BotHard");

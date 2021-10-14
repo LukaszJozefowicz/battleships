@@ -94,19 +94,19 @@ create table if not exists ships
 CREATE SEQUENCE IF NOT EXISTS ships_sequence OWNED BY ships.id;
 
 --changeset lukasz:12
-insert into roles (id, name) values(3, 'ROLE_BOT_EASY');
-insert into roles (id, name) values(4, 'ROLE_BOT_NORMAL');
-insert into roles (id, name) values(5, 'ROLE_BOT_HARD');
+insert into roles (id, name) values(3, 'ROLE_BOT');
 
 --changeset lukasz:13
 CREATE TABLE IF NOT EXISTS settings
 (
     id bigint NOT NULL,
     difficulty VARCHAR(50) NOT NULL,
+    starting_player VARCHAR(10) NOT NULL,
+    ship_shape VARCHAR(50) NOT NULL,
     primary key(id)
 );
 
-INSERT INTO settings (id, difficulty) VALUES(1, 'EASY');
+INSERT INTO settings (id, difficulty, starting_player, ship_shape) VALUES(1, 'NORMAL', 'RANDOM', 'CLASSIC');
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS settings_id bigint;
 ALTER TABLE users ADD CONSTRAINT settings_fk FOREIGN KEY(settings_id) REFERENCES settings;
@@ -120,4 +120,17 @@ CREATE SEQUENCE IF NOT EXISTS settings_sequence OWNED BY settings.id
     cache 1;
 
 --changeset lukasz:15
-ALTER TABLE settings ADD CONSTRAINT difficulty_unique UNIQUE (difficulty);
+drop table allowed_ships cascade;
+create table if not exists allowed_ships
+(
+    id bigint not null,
+    type varchar(25),
+    length int not null,
+    num_allowed int not null,
+    CONSTRAINT allowed_ships_pk primary key (id)
+);
+insert into allowed_ships (id, type, length, num_allowed) values(1, 'superCarrier', 5, 1);
+insert into allowed_ships (id, type, length, num_allowed) values(2, 'carrier', 4, 1);
+insert into allowed_ships (id, type, length, num_allowed) values(3, 'battleship', 3, 2);
+insert into allowed_ships (id, type, length, num_allowed) values(4, 'destroyer', 2, 3);
+insert into allowed_ships (id, type, length, num_allowed) values(5, 'patrolBoat', 1, 4);

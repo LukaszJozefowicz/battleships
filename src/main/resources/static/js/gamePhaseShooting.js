@@ -1,7 +1,7 @@
-/* vars from th:inline script tag in boards.html
+/* globals from th:inline script tag in boards.html
 
-        var shipsToPlace = JSON.parse([[${shipsToPlace}]]);
-        var startingPlayer = [[${startingPlayer}]];
+        const shipsToPlace = JSON.parse([[${shipsToPlace}]]);
+        const startingPlayer = [[${startingPlayer}]];
 
 */
 
@@ -35,11 +35,11 @@ class TextOutputUtils {
             opponentLeftInfo.style.textAlign = "center";
             opponentLeftInfo.style.color = "red";
             opponentLeftInfo.style.fontWeight = "bold";
-            opponentLeftInfo.innerHTML = "Opponent left";
+            opponentLeftInfo.innerHTML = "Opponent left :(";
             duringGameInfo.appendChild(opponentLeftInfo);
         }
         BoardUtils.disableBothBoards();
-        this.textOutput.value += payloadBody.username + " left\n";
+        this.textOutput.value += payloadBody.username + " left :(\n";
         this.textOutput.scrollTop = this.textOutput.scrollHeight;
     }
 }
@@ -58,7 +58,7 @@ class BoardUtils {
 
     static setCellInteractive(cell){
         $(cell).on({
-                        mouseenter: function() {
+                        mouseover: function() {
 
                             if($(cell).attr('fieldstatus') == 'empty' && $(cell).is(':enabled')){
                                     this.style.backgroundColor = "#1e90ff";     //highlighted
@@ -155,7 +155,7 @@ class ShotUtils {
 
         document.getElementById("gameStaticInfo").style.display = "inline-block";
         document.getElementById("gameLiveInfo").style.display = "inline-block";
-        let chatMsgAtGameStart = "The game has started!\nPlayer to start chosen randomly.\nCurrent turn: ";
+        let chatMsgAtGameStart = "The game has started!\nCurrent turn: ";
 
         TextOutputUtils.appendCurrentTurnInfo(chatMsgAtGameStart, startingPlayer);
 
