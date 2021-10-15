@@ -37,6 +37,7 @@ class TextOutputUtils {
             opponentLeftInfo.style.fontWeight = "bold";
             opponentLeftInfo.innerHTML = "Opponent left :(";
             duringGameInfo.appendChild(opponentLeftInfo);
+            ShipsSetupUtils.removeResetAndAutoPlacementButtons();
         }
         BoardUtils.disableBothBoards();
         this.textOutput.value += payloadBody.username + " left :(\n";

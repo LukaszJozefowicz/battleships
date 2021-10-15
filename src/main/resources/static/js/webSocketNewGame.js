@@ -62,6 +62,11 @@ function connect(){
             client.subscribe("/user/queue/resetBoard/" + gameId, payload => {
             });
 
+            client.subscribe("/user/queue/error", payload => {
+                errorMsg = payload.body;
+                window.location.href = "/boardSetupError?" + errorMsg;
+            });
+
             client.subscribe("/user/queue/autoPlacement/" + gameId, payload => {
                  var payloadBody = JSON.parse(payload.body);
                  ShipsSetupUtils.setAllShipsRandomly(payloadBody);

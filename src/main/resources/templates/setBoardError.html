@@ -4,10 +4,22 @@
     <title>Set board error</title>
 </head>
 <body>
-<h2 style="padding: 200px 0 0 0; text-align: center; color: red;">Error occurred during initialization of computer board.
+<h2 style="padding: 200px 0 0 0; text-align: center; color: red; font-weight: bold;">Error occurred during auto-initialization of the board.
 <br>It is recommended to lower amount of allowed ships in settings.</h2>
+<h2 style="text-align: center; color: black; font-weight: bold;">Error message:</h2>
+<p id = "errorMessage" style="text-align: center; color: black; font-weight: bold; font-size: 20px; overflow-wrap: break-word;"></p>
+
 <div class="btn-back" style="display: flex">
     <button class="menu-btn" onclick = "window.location.href='/'">Back to main menu</button>
 </div>
 </body>
+
+<script>
+window.onload = () => {
+    const currentURL = window.location.href;
+    const msg = currentURL.substring(currentURL.indexOf("?") + 1);
+
+    document.getElementById("errorMessage").innerHTML = decodeURI(msg);
+}
+</script>
 </html>

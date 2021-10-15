@@ -6,6 +6,7 @@ import com.ljozefowicz.battleships.dto.mapper.DtoMapper;
 import com.ljozefowicz.battleships.enums.FieldStatus;
 import com.ljozefowicz.battleships.enums.GameTurn;
 import com.ljozefowicz.battleships.enums.UserRole;
+import com.ljozefowicz.battleships.exception.RandomSetBoardFailedException;
 import com.ljozefowicz.battleships.model.beans.ActiveGamesList;
 import com.ljozefowicz.battleships.model.entity.Board;
 import com.ljozefowicz.battleships.service.AllowedShipService;
@@ -19,9 +20,11 @@ import com.ljozefowicz.battleships.stompMessageObj.ShotInfo;
 import com.ljozefowicz.battleships.util.Counter;
 import lombok.AllArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -84,7 +87,7 @@ public class NewGameController {
 
         Board currentBoard = gameService.getBoardByUsername(gameId, principal.getName());
 
-        boardService.updateField(currentBoard, placementInfo.getCoords(), FieldStatus.SHIP_ALIVE); //FieldStatus.SHIP_ALIVE || FieldStatus.valueOf(placementInfo.getFieldStatus())
+        boardService.updateField(currentBoard, placementInfo.getCoords(), FieldStatus.SHIP_ALIVE);
         boardService.addShipField(currentBoard, placementInfo);
 
         messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/placeShip/" + gameId, placementInfo);
@@ -101,15 +104,6 @@ public class NewGameController {
     @MessageMapping("/autoPlacement/{gameId}")
     public void autoFillBoard(Principal principal, @DestinationVariable Long gameId){
 
-//        gameService.findGameById(gameId).ifPresent(currentGame -> {
-//            ShipShape shipShape = currentGame.getSettings().getShipShape();
-//            Board currentBoard = gameService.getBoardByUsername(gameId, principal.getName());
-//            boardService.resetBoard(currentBoard);
-//            currentBoard = boardService.autoInitializeBoard(shipShape, currentBoard);
-//
-//            FieldStatus[][] fieldStatusArray = boardService.getBoardAsArray(currentBoard);
-//            messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/autoPlacement/" + gameId, new Gson().toJson(fieldStatusArray));
-//        });
         Board currentBoard = gameService.getBoardByUsername(gameId, principal.getName());
         boardService.resetBoard(currentBoard);
         currentBoard = boardService.autoInitializeBoard(gameService.getGameSettings(gameId).getShipShape(), currentBoard);
@@ -150,13 +144,15 @@ public class NewGameController {
         CurrentGameStateDto currentGameState = gameService.getCurrentGameState(gameId);
 
         if(UserRole.isBot(currentGameState.getCurrentPlayer())){
+
+            FieldStatus[][] playerBoard = boardService.getBoardAsArray(currentGameState.getOpponentPlayerBoard());
             switch (currentGameState.getSettings().getDifficulty()){
                 case EASY:
-                    shotInfo.setCoords(boardService.getRandomTarget(boardService.getBoardAsArray(currentGameState.getOpponentPlayerBoard())));
+                    shotInfo.setCoords(boardService.getRandomTarget(playerBoard));
                     break;
                 case NORMAL:
                 case HARD:
-                    shotInfo.setCoords(boardService.getRandomTargetPossiblyNearShipHit(boardService.getBoardAsArray(currentGameState.getOpponentPlayerBoard()), currentGameState.getSettings().getShipShape()));
+                    shotInfo.setCoords(boardService.getRandomTargetPossiblyNearShipHit(playerBoard, currentGameState.getSettings().getShipShape()));
                     break;
             }
         }
@@ -176,50 +172,9 @@ public class NewGameController {
         }
     }
 
-    /*@MessageMapping("/shoot/{gameId}")
-    @SendTo("/newGame/{gameId}/shoot")
-    public ShotInfoDto shoot(ShotInfoDto shotInfo, @DestinationVariable Long gameId) throws InterruptedException{
-
-        Game currentGame = gameService.findGameById(gameId)
-                .orElseThrow(() -> new EntityNotFoundException("Game with id: " + gameId + " not found in db"));
-
-        String currentPlayer = gameService.getActivePlayerUsername(currentGame);
-        String opponentPlayer = gameService.getInactivePlayerUsername(currentGame);
-        Board currentPlayerBoard = gameService.getActivePlayerBoard(currentGame);
-        Board opponentPlayerBoard = gameService.getInactivePlayerBoard(currentGame);
-
-        //-------------
-
-        if(opponentPlayer.equals("ComputerEasy")){
-        }
-
-        //-------------
-
-        String shotResult = boardService.getShotResult(opponentPlayerBoard, shotInfo.getCoords());
-        String sunkShipCoords = "";
-        String shipFieldsToReveal = "";
-        boolean isAllShipsSunk = false;
-
-        boardService.updateField(opponentPlayerBoard, shotInfo.getCoords(), FieldStatus.valueOf(shotResult));
-
-        if(shotResult.equals(FieldStatus.SHIP_SUNK.name())){
-            sunkShipCoords = boardService.getFieldsOfShipByCoords(opponentPlayerBoard, shotInfo.getCoords());
-            isAllShipsSunk = boardService.checkIfAllShipsAreSunk(opponentPlayerBoard.getId());
-            if(isAllShipsSunk) {
-                shipFieldsToReveal = boardService.getShipFieldsToReveal(currentPlayerBoard.getId());
-            }
-        }
-        if(!isAllShipsSunk)
-            gameService.switchTurns(currentGame);
-
-        return ShotInfoDto.builder()
-                .currentPlayer(currentPlayer)
-                .opponentPlayer(opponentPlayer)
-                .shotResult(shotResult)
-                .coords(shotInfo.getCoords())
-                .sunkShipCoords(sunkShipCoords)
-                .isAllShipsSunk(isAllShipsSunk)
-                .shipFieldsToReveal(shipFieldsToReveal)
-                .build();
-    }*/
+    @MessageExceptionHandler
+    @SendToUser("/queue/error")
+    public String handleBoardRandomSetupException(RandomSetBoardFailedException ex) {
+        return ex.getMessage();
+    }
 }

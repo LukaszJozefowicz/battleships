@@ -102,8 +102,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .clearAuthentication(true)
                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
                 .logoutSuccessUrl("/login?logout")
-                .permitAll();
-        http
+//                .permitAll();
+//        http
+                .permitAll()
+                .and()
                 .sessionManagement()
                 .sessionAuthenticationStrategy(concurrentSession())
                 .maximumSessions(1)

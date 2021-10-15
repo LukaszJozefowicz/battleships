@@ -17,7 +17,7 @@ import com.ljozefowicz.battleships.repository.ShipRepository;
 import com.ljozefowicz.battleships.service.AllowedShipService;
 import com.ljozefowicz.battleships.service.BoardService;
 import com.ljozefowicz.battleships.stompMessageObj.ShotInfo;
-import com.ljozefowicz.battleships.util.Field;
+import com.ljozefowicz.battleships.util.FieldWithDirection;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -152,33 +152,30 @@ public class BoardServiceImpl implements BoardService{
     public Board autoInitializeBoard(ShipShape shipShape, Board existingBoard) {
 
         BoardArrayUtils boardArrayUtils = new BoardArrayUtils();
-        final Board boardToSave;
-        int retry = 0;
-        List<ShipPlacementInfo> shipsToAdd = new ArrayList<>();
-        FieldStatus[][] fieldStatusArray = boardArrayUtils.autoInitializeBoardArray(shipShape, shipsToAdd);
 
-        while(retry < 50 && fieldStatusArray.length != 10) {    // 50 tries should be enough and not affect performance much
-            System.out.println("---------------------------retry---------------------------: " + retry);
+        Board boardToSave = existingBoard == null
+                ? Board.builder().build()
+                : existingBoard;
+        int retry = 0;
+        FieldStatus[][] fieldStatusArray;
+        List<ShipPlacementInfo> shipsToAdd = new ArrayList<>();
+
+        do {
             fieldStatusArray = boardArrayUtils.autoInitializeBoardArray(shipShape, shipsToAdd);
             retry++;
-        }
+        } while(retry < 50 && fieldStatusArray.length != 10); // 50 tries should be enough and not affect performance much
 
-        if(fieldStatusArray.length == 10) {
-            if(existingBoard == null){
-                boardToSave = Board.builder()
-                    .persistedBoard(new Gson().toJson(fieldStatusArray))
-                    .build();
-            } else {
-                existingBoard.setPersistedBoard(new Gson().toJson(fieldStatusArray));
-                boardToSave = existingBoard;
-            }
+        if(fieldStatusArray.length != 10) {
+            throw new RandomSetBoardFailedException("Auto initialization of the board failed after " + retry + " tries");
+        } else {
+            boardToSave.setPersistedBoard(new Gson().toJson(fieldStatusArray));
 
             for(ShipPlacementInfo ship : shipsToAdd){
                 addShipField(boardToSave, ship);
             }
 
             return boardRepository.save(boardToSave);
-        } else throw new RandomSetBoardFailedException("Initialization of the board for computer player failed");
+        }
     }
 
     @Override
@@ -207,23 +204,25 @@ public class BoardServiceImpl implements BoardService{
 
         if (shipHitCoords.isEmpty()) return getRandomTarget(fieldStatusArray);
 
-        if(shipShape == ShipShape.CLASSIC){
-            List<String> validTargets = boardArrayUtils.getTargetsIfSureOfDirection(fieldStatusArray, shipHitCoords);
-            if(!validTargets.isEmpty()) {
-//                System.out.println("sure of direction");
-                return validTargets.get(new Random().nextInt(validTargets.size()));
-            }
+        switch (shipShape){
+            case CLASSIC:
+                List<String> validTargets = boardArrayUtils.getTargetsIfSureOfDirection(fieldStatusArray, shipHitCoords);
+                if(!validTargets.isEmpty()) {
+                    return validTargets.get(new Random().nextInt(validTargets.size()));
+                }
+            case ANY_DIRECTION:
+                Collections.shuffle(shipHitCoords);
+                for(String coords : shipHitCoords){
+                    Predicate <FieldStatus> isStatusEmptyOrAlive = f -> f == FieldStatus.EMPTY || f == FieldStatus.SHIP_ALIVE;
+                    Direction randomPossibleDirection = boardArrayUtils.getRandomPossibleDirection(fieldStatusArray, coords, isStatusEmptyOrAlive);
+                    if(randomPossibleDirection == Direction.NO_DIRECTION) continue;
+
+                    return boardArrayUtils.getNextCoords(coords, randomPossibleDirection);
+
+                }
+            default:
+                throw new RandomShotException("Exception in method: getRandomTargetPossiblyNearShipHit. Settings.shipShape: " + shipShape.name());
         }
-
-        for(String coords : shipHitCoords){
-            Predicate <FieldStatus> isStatusEmptyOrAlive = f -> f == FieldStatus.EMPTY || f == FieldStatus.SHIP_ALIVE;
-            List<Direction> possibleDirections = boardArrayUtils.getDirectionsPossible(fieldStatusArray, coords, isStatusEmptyOrAlive);
-
-            if(possibleDirections.isEmpty()) continue;
-
-            return boardArrayUtils.getNextCoords(coords, possibleDirections, Direction.NO_LOCKED_DIRECTION);
-        }
-        throw new RandomShotException("Something went wrong when choosing random shot coords");
     }
 
     // ------------------ private ------------------
@@ -289,59 +288,33 @@ public class BoardServiceImpl implements BoardService{
 
     private class BoardArrayUtils {
 
-        private FieldStatus[][] autoInitializeBoardArray(ShipShape shipShape, List<ShipPlacementInfo> shipsToAdd) {
+        private FieldStatus[][] autoInitializeBoardArray(ShipShape shipShape, List<ShipPlacementInfo> shipsToAdd){
 
             shipsToAdd.clear();
             FieldStatus[][] fieldStatusArray = new FieldStatus[10][10];
             Arrays.stream(fieldStatusArray).forEach(e -> Arrays.fill(e, FieldStatus.EMPTY));
 
             List<ShipToPlaceDto> shipsToPlace = allowedShipService.getListOfShipsToPlace();
-            Direction lockedDirection = Direction.NO_LOCKED_DIRECTION;
 
             for(ShipToPlaceDto shipToPlace : shipsToPlace){
 
-                System.out.println("Ship: " + shipToPlace.getType());
-//                String coords = getRandomEmptyTile(fieldStatusArray);
-                Field initialField = getRandomEmptyTileValidForShip(fieldStatusArray, shipToPlace.getLength());
+                final FieldWithDirection initialField = shipShape == ShipShape.CLASSIC
+                        ? getRandomEmptyTileValidForShip(fieldStatusArray, shipToPlace.getLength())
+                        : getRandomEmptyTile(fieldStatusArray);
+                Direction initialDirection = initialField.getDirection();
                 String coords = initialField.getCoords();
-                if(shipShape == ShipShape.CLASSIC){
-                    lockedDirection = initialField.getDirection();
-                }
 
-                for (int whichShipField = 0; whichShipField < shipToPlace.getLength(); whichShipField++) {
-                    System.out.println("Tile: " + whichShipField);
-                    System.out.println("locked direction: " + lockedDirection);
-                    System.out.println("coords: " + coords);
+                for (int shipFieldCount = 0; shipFieldCount < shipToPlace.getLength(); shipFieldCount++) {
+
                     Predicate<FieldStatus> isStatusEmpty = f -> f == FieldStatus.EMPTY;
+                    Direction chosenDirection = shipShape == ShipShape.CLASSIC
+                            ? initialDirection
+                            : getRandomPossibleDirection(fieldStatusArray, coords, isStatusEmpty);
 
-                    List<Direction> possibleDirections = getDirectionsPossible(fieldStatusArray, coords, isStatusEmpty);
-
-                    switch (shipShape) {
-                        case ANY_DIRECTION:
-                            if (possibleDirections.isEmpty()) {
-                                shipsToAdd.clear();
-                                return new FieldStatus[][]{{FieldStatus.EMPTY}};
-                            }
-                            break;
-                        case CLASSIC:
-                            if(lockedDirection == Direction.NO_LOCKED_DIRECTION){
-                                shipsToAdd.clear();
-                                return new FieldStatus[][]{{FieldStatus.EMPTY}};
-                            }
-                            break;
+                    if(chosenDirection == Direction.NO_DIRECTION){
+                        shipsToAdd.clear();
+                        return new FieldStatus[][]{{FieldStatus.EMPTY}};
                     }
-//                    if(shipShape == ShipShape.CLASSIC && whichShipField == 0){
-//
-//                        lockedDirection = getLockedDirection(fieldStatusArray, coords, shipToPlace.getLength());
-//                        if(lockedDirection == Direction.NO_LOCKED_DIRECTION){
-//                            shipsToAdd.clear();
-//                            return new FieldStatus[][]{{FieldStatus.EMPTY}};
-//                        }
-//
-//                    }
-//                    if(shipShape == ShipShape.CLASSIC && whichShipField == shipToPlace.getLength() - 1) {
-//                        lockedDirection = Direction.NO_LOCKED_DIRECTION;
-//                    }
 
                     shipsToAdd.add(ShipPlacementInfo.builder()
                                 .fieldStatus("SHIP_ALIVE")
@@ -351,7 +324,7 @@ public class BoardServiceImpl implements BoardService{
                                 .build());
 
                     fieldStatusArray[getRow(coords)][getCol(coords)] = FieldStatus.SHIP_ALIVE;
-                    coords = getNextCoords(coords, possibleDirections, lockedDirection);
+                    coords = getNextCoords(coords, chosenDirection);
                 }
                 markFieldsAroundPlacedShip(fieldStatusArray, FieldStatus.EMPTY, FieldStatus.AROUND_SHIP);
             }
@@ -360,45 +333,51 @@ public class BoardServiceImpl implements BoardService{
             return fieldStatusArray;
         }
 
-        private String getRandomEmptyTile(FieldStatus[][] fieldStatusArray){
+        private FieldWithDirection getRandomEmptyTile(FieldStatus[][] fieldStatusArray){
 
             boolean isAnyEmptyTile = Arrays.stream(fieldStatusArray)
                     .flatMap(Stream::of) //arr -> Arrays.stream(arr)
                     .anyMatch(fieldStatus -> fieldStatus == FieldStatus.EMPTY);
 
-            if(!isAnyEmptyTile) throw new RandomSetBoardFailedException("There are no empty tiles to place a ship on");
+            if(!isAnyEmptyTile) throw new RandomSetBoardFailedException("Exception in method: getRandomEmptyTile. There are no empty tiles to place a ship on");
 
             while(true) {
+                Predicate<FieldStatus> isStatusEmpty = f -> f == FieldStatus.EMPTY;
                 int row = new Random().nextInt(10);
                 int col = new Random().nextInt(10);
+                Direction randomValidDirection = getRandomPossibleDirection(fieldStatusArray, Integer.toString(row) + col, isStatusEmpty);
+
                 if(fieldStatusArray[row][col] == FieldStatus.EMPTY)
-                    return Integer.toString(row) + col;
+                    return FieldWithDirection.builder()
+                            .coords(Integer.toString(row) + col)
+                            .direction(randomValidDirection)
+                            .build();
             }
         }
 
-        private Field getRandomEmptyTileValidForShip(FieldStatus[][] fieldStatusArray, int shipLength){
+        private FieldWithDirection getRandomEmptyTileValidForShip(FieldStatus[][] fieldStatusArray, int shipLength){
 
             boolean isAnyEmptyTile = Arrays.stream(fieldStatusArray)
                     .flatMap(Stream::of) //arr -> Arrays.stream(arr)
                     .anyMatch(fieldStatus -> fieldStatus == FieldStatus.EMPTY);
 
-            if(!isAnyEmptyTile) throw new RandomSetBoardFailedException("There are no empty tiles to place a ship on");
+            if(!isAnyEmptyTile) throw new RandomSetBoardFailedException("Exception in method: getRandomEmptyTileValidForShip. There are no empty tiles to place a ship on");
 
             int retry = 0;
 
-            while(retry < 100) {
-                System.out.println("retry getRandomTile: " + retry);
+            while(retry < 200) {
                 retry++;
                 int row = new Random().nextInt(10);
                 int col = new Random().nextInt(10);
-                Direction randomValidDirection = getLockedDirection(fieldStatusArray, Integer.toString(row) + col, shipLength);
-                if(fieldStatusArray[row][col] == FieldStatus.EMPTY && randomValidDirection != Direction.NO_LOCKED_DIRECTION)
-                    return Field.builder()
+                Direction randomValidDirection = getLockedDirection(fieldStatusArray, row, col, shipLength);
+
+                if(fieldStatusArray[row][col] == FieldStatus.EMPTY && randomValidDirection != Direction.NO_DIRECTION)
+                    return FieldWithDirection.builder()
                         .coords(Integer.toString(row) + col)
                         .direction(randomValidDirection)
                         .build();
             }
-            throw new RandomSetBoardFailedException("Can't find a suitable place for the ship. Try lowering amount of allowed ships in settings.");
+            throw new RandomSetBoardFailedException("Exception in method: getRandomEmptyTileValidForShip. Can't find a suitable place for the ship after " + retry + "tries.");
         }
 
         private List<String> getShipHitTiles(FieldStatus[][] fieldStatusArray){
@@ -447,17 +426,17 @@ public class BoardServiceImpl implements BoardService{
                 }
             }
 
-            //System.out.println("validTargets.size(): " + validTargets.size() + " isEmpty: " + validTargets.isEmpty());
+//            System.out.println("validTargets.size(): " + validTargets.size() + " isEmpty: " + validTargets.isEmpty());
             return validTargets;
         }
 
-        private List<Direction> getDirectionsPossible(FieldStatus[][] fieldStatusArray, String coords, Predicate fieldStatusCheck){
+        private Direction getRandomPossibleDirection(FieldStatus[][] fieldStatusArray, String coords, Predicate fieldStatusCheck){
 
             int row = getRow(coords);
             int col = getCol(coords);
             List<Direction> directionsPossible = new ArrayList<>();
 
-            if(!isInArrayBounds(row) || !isInArrayBounds(col)) return directionsPossible;
+            if(!isInArrayBounds(row) || !isInArrayBounds(col)) return Direction.NO_DIRECTION;
 
             if (isInArrayBounds(row - 1) && fieldStatusCheck.test(fieldStatusArray[row - 1][col])) {
                 directionsPossible.add(Direction.UP);
@@ -471,13 +450,15 @@ public class BoardServiceImpl implements BoardService{
             if (isInArrayBounds(col + 1) && fieldStatusCheck.test(fieldStatusArray[row][col + 1])) {
                 directionsPossible.add(Direction.RIGHT);
             }
-            return directionsPossible;
+
+            if(!directionsPossible.isEmpty()) {
+                return directionsPossible.get(new Random().nextInt(directionsPossible.size()));
+            } else {
+                return Direction.NO_DIRECTION;
+            }
         }
 
-        private Direction getLockedDirection(FieldStatus[][] fieldStatusArray, String coords, int shipLength){
-
-            int row = getRow(coords);
-            int col = getCol(coords);
+        private Direction getLockedDirection(FieldStatus[][] fieldStatusArray, int row, int col, int shipLength){
 
             List<Direction> directionsPossible = new ArrayList<>(List.of(Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT));
 
@@ -496,88 +477,15 @@ public class BoardServiceImpl implements BoardService{
                     directionsPossible.remove(Direction.RIGHT);
             }
 
-            System.out.println("getLockedDirection row: " + row + " col: " + col + " shipLength: " + shipLength);
-            System.out.println("possibleDirections: " + Arrays.toString(directionsPossible.toArray()));
-//            if(isInArrayBounds(row - shipLength)){
-//                for(int i = 0; i < shipLength; i++){
-//                    if(!fieldStatusCheck.test(fieldStatusArray[row - i][col]))
-//                        break;
-//                    if(i == shipLength - 1)
-//                        directionsPossible.add(Direction.UP);
-//                }
-//            }
-//
-//            if(isInArrayBounds(row + shipLength)){
-//                for(int i = 0; i < shipLength; i++){
-//                    if(!fieldStatusCheck.test(fieldStatusArray[row + i][col]))
-//                        break;
-//                    if(i == shipLength - 1)
-//                        directionsPossible.add(Direction.DOWN);
-//                }
-//            }
-//
-//            if(isInArrayBounds(col - shipLength)){
-//                for(int i = 0; i < shipLength; i++){
-//                    if(!fieldStatusCheck.test(fieldStatusArray[row][col - i]))
-//                        break;
-//                    if(i == shipLength - 1)
-//                        directionsPossible.add(Direction.LEFT);
-//                }
-//            }
-//
-//            if(isInArrayBounds(col + shipLength)){
-//                for(int i = 0; i < shipLength; i++){
-//                    if(!fieldStatusCheck.test(fieldStatusArray[row][col + i]))
-//                        break;
-//                    if(i == shipLength - 1)
-//                        directionsPossible.add(Direction.RIGHT);
-//                }
-//            }
-
             if(!directionsPossible.isEmpty()) {
                 return directionsPossible.get(new Random().nextInt(directionsPossible.size()));
             } else {
-                return Direction.NO_LOCKED_DIRECTION;
+                return Direction.NO_DIRECTION;
             }
 
         }
 
-        private Direction addDirection(FieldStatus[][] fieldStatusArray, List<Direction> directionsPossible, String coords, int shipLength, Direction direction){
-
-            int row = getRow(coords);
-            int col = getCol(coords);
-            int coord;
-
-            switch(direction){
-                case UP:
-                    shipLength *= -1;
-                    coord = row;
-            }
-
-            if(isInArrayBounds(row - shipLength)){
-                for(int i = 0; i < shipLength; i++){
-                    if(fieldStatusArray[row - i][col] != FieldStatus.EMPTY){
-                        break;
-                    }
-                    if(i == shipLength - 1){
-                        directionsPossible.add(Direction.UP);
-                    }
-                }
-            }
-            return Direction.NO_LOCKED_DIRECTION;
-        }
-
-        private String getNextCoords(String coords, List<Direction> possibleDirections, Direction lockedDirection){
-
-//            Direction randomDirection = possibleDirections.get(new Random().nextInt(possibleDirections.size()));
-
-            final Direction randomDirection;
-
-            if(lockedDirection != Direction.NO_LOCKED_DIRECTION) {
-                randomDirection = lockedDirection;
-            } else {
-                randomDirection = possibleDirections.get(new Random().nextInt(possibleDirections.size()));
-            }
+        private String getNextCoords(String coords, Direction randomDirection){
 
             switch (randomDirection){
                 case UP:
@@ -589,7 +497,7 @@ public class BoardServiceImpl implements BoardService{
                 case RIGHT:
                     return getRow(coords) + Integer.toString(getCol(coords) + 1);
                 default:
-                    return "error";
+                    throw new RandomSetBoardFailedException("Exception in method: getNextCoords when setting next coords for row: " + getRow(coords) + " col: " + getCol(coords));
             }
         }
 
@@ -710,14 +618,6 @@ public class BoardServiceImpl implements BoardService{
         }
     }
 
-    //    private Long countShipPlacedTiles(FieldStatus[][] fieldStatusArray){
-//        return Arrays.stream(fieldStatusArray)
-//                .flatMap(Stream::of)
-//                .filter(field -> field == FieldStatus.SHIP_ALIVE)
-//                .count();
-//
-//    }
-
     /*public static void main(String[] args) {
 
 //        FieldStatus[][] fieldStatusArray = new FieldStatus[][]{
@@ -740,19 +640,25 @@ public class BoardServiceImpl implements BoardService{
 //                .flatMap(Stream::of)
 //                .filter(field -> field == FieldStatus.SHIP_ALIVE)
 //                .count());
-        for (int i = 0; i < 1000; i++) {
+//        for (int i = 0; i < 1000; i++) {
+//
+//
+//            List<Integer> list = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+//            int random = new Random().nextInt(list.size());
+//            Set<Integer> set = list.stream()
+//                    .collect(Collectors.toSet());
+//
+//            Integer result = set.stream()
+//                    .skip(random)
+//                    .findFirst()
+//                    .get();
+//            System.out.println("random nb to skip: " + random + " result: " + result);
+//        }
 
 
-            List<Integer> list = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-            int random = new Random().nextInt(list.size());
-            Set<Integer> set = list.stream()
-                    .collect(Collectors.toSet());
-
-            Integer result = set.stream()
-                    .skip(random)
-                    .findFirst()
-                    .get();
-            System.out.println("random nb to skip: " + random + " result: " + result);
-        }
+        List<Integer> list = new ArrayList<>(List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+        System.out.println(Arrays.toString(list.toArray()));
+        Collections.shuffle(list);
+        System.out.println(Arrays.toString(list.toArray()));
     }*/
 }

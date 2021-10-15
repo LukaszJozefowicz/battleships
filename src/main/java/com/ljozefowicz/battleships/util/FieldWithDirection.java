@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 @Builder
-public class Field {
+public class FieldWithDirection {
     private String coords;
     private Direction direction;
 }

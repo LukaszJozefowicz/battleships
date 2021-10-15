@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.ljozefowicz.battleships.dto.GameDto;
 import com.ljozefowicz.battleships.exception.EntityNotFoundException;
+import com.ljozefowicz.battleships.exception.RandomSetBoardFailedException;
 import com.ljozefowicz.battleships.stompMessageObj.Message;
 import com.ljozefowicz.battleships.dto.mapper.DtoMapper;
 import com.ljozefowicz.battleships.enums.GameState;
@@ -12,10 +13,13 @@ import com.ljozefowicz.battleships.model.beans.ActiveGamesList;
 import com.ljozefowicz.battleships.service.BoardService;
 import com.ljozefowicz.battleships.service.GameService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.lang.reflect.Type;
@@ -59,6 +63,12 @@ public class GameLobbyController {
     @GetMapping("/")
     public String getMainPage(){
         return "main-menu";
+    }
+
+    @GetMapping("/boardSetupError")
+    public String getErrorPage(Model model){
+
+        return "setBoardError";
     }
 
     //------------ webSocket controllers --------------
@@ -168,6 +178,12 @@ public class GameLobbyController {
 
         messagingTemplate.convertAndSendToUser(gameToStart.getPlayer2(), "/queue/notify", msg);
         messagingTemplate.convertAndSendToUser(gameToStart.getPlayer1(), "/queue/notify", msg);
+    }
+
+    @MessageExceptionHandler
+    @SendToUser("/queue/error")
+    public String handleBoardRandomSetupException(RandomSetBoardFailedException ex) {
+        return ex.getMessage();
     }
 
     private void setPlayerJoinedInfoInActiveGamesList(Long gameId, String playerName, GameState gameState){

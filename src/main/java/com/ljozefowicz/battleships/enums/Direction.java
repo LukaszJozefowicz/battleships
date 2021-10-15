@@ -9,5 +9,5 @@ public enum Direction {
     UP_RIGHT,
     DOWN_LEFT,
     DOWN_RIGHT,
-    NO_LOCKED_DIRECTION
+    NO_DIRECTION
 }

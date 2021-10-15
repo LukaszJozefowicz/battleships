@@ -112,7 +112,7 @@ class ShipsSetupUtils {
             clickedCell.disabled=true;
             clickedCell.setAttribute('fieldstatus', 'shipPlaced');
 
-//            let lockedDirection = undefined;
+            let lockedDirection = undefined;
 
             ShipsSetupUtils.highlightNeighbors(ShipsSetupUtils.lockedDirection);
 
@@ -122,7 +122,6 @@ class ShipsSetupUtils {
 
             if(ShipsSetupUtils.whichShip === shipsToPlace.length){
                 ShipsSetupUtils.lockedDirection = undefined;
-//                ShipsSetupUtils.disableAllCells();
                 ShipsSetupUtils.setUpForGameStart();
                 if(ShipsSetupUtils.isOpponentReady || isGameVsPC)
                     ShotUtils.startShootingPhase();
@@ -182,14 +181,6 @@ class ShipsSetupUtils {
         });
     }
 
-//    static disableAllCells(){
-//        var cells = document.querySelectorAll("#boardTable .my-btn");
-//
-//        cells.forEach(cell => {
-//            cell.disabled=true;
-//        })
-//    }
-
     static setUpForGameStart(){
         var cells = document.querySelectorAll("#boardTable .my-btn");
 
@@ -200,7 +191,10 @@ class ShipsSetupUtils {
                 cell.style.backgroundColor = "#add8e6"
             }
         });
+        this.removeResetAndAutoPlacementButtons();
+    }
 
+    static removeResetAndAutoPlacementButtons(){
         let resetButton = document.getElementById("reset");
         let randomizeButton = document.getElementById("randomPlacement");
         resetButton.remove();

@@ -3,6 +3,7 @@ var client = null;
 var activeUsersList = null;
 var activeGamesList = null;
 var chatText = "";
+var errorMsg = "";
 const authenticatedUserName = document.getElementById("currentUsername").innerHTML;
 
 window.onload = function load(){
@@ -56,10 +57,16 @@ function connect(){
                         && payloadBody.player1 !== undefined
                         && payloadBody.player2 !== undefined
                         && payloadBody.gameState === "READY_TO_START"){
-                        gameStartCountdown();
-                        setTimeout(GameLobbyUtils.redirectToNewGameScreen.bind(null, payloadBody.id), 3000);
+//                            GameLobbyUtils.redirectToNewGameScreen(payloadBody.id);
+                            gameStartCountdown();
+                            setTimeout(GameLobbyUtils.redirectToNewGameScreen.bind(null, payloadBody.id), 3000);
                    }
 
+            });
+
+            client.subscribe("/user/queue/error", payload => {
+                errorMsg = payload.body;
+                window.location.href = "/boardSetupError?" + errorMsg;
             });
 
             client.send('/ws/listOfUsers', {}, JSON.stringify(activeUsersList));
