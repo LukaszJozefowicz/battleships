@@ -106,7 +106,7 @@ public class NewGameController {
 
         Board currentBoard = gameService.getBoardByUsername(gameId, principal.getName());
         boardService.resetBoard(currentBoard);
-        currentBoard = boardService.autoInitializeBoard(gameService.getGameSettings(gameId).getShipShape(), currentBoard);
+        boardService.autoInitializeBoard(gameService.getGameSettings(gameId).getShipShape(), currentBoard);
 
         FieldStatus[][] fieldStatusArray = boardService.getBoardAsArray(currentBoard);
         messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/autoPlacement/" + gameId, new Gson().toJson(fieldStatusArray));

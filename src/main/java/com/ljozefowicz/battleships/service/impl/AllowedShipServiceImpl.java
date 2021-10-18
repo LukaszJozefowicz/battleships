@@ -32,17 +32,4 @@ public class AllowedShipServiceImpl implements AllowedShipService {
 
         return resultList;
     }
-
-    /*public int countAllowedShipsTotalTiles(List<ShipToPlaceDto> shipsToPlace){
-
-        System.out.println("allowed ships total tiles:\n"
-                + shipsToPlace.stream()
-                .map(ship -> ship.getLength())
-                .reduce(0, (acc, tiles) -> acc + tiles));
-
-        return shipsToPlace.stream()
-                .map(ship -> ship.getLength())
-                .reduce(0, (acc, tiles) -> acc + tiles);
-
-    }*/
 }

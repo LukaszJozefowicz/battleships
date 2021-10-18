@@ -70,7 +70,7 @@ public class BoardServiceImpl implements BoardService{
     }
 
     @Override
-    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRES_NEW)
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public Board updateField(Board board, String coords, FieldStatus fieldStatus) {
         FieldStatus[][] fieldStatusArray = getBoardAsArray(board);
         fieldStatusArray[getRow(coords)][getCol(coords)] = fieldStatus;
@@ -80,9 +80,10 @@ public class BoardServiceImpl implements BoardService{
     }
 
     @Override
-    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRES_NEW)
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public Board addShipField(Board board, ShipPlacementInfo placementInfo){
 
+        System.out.println("addShipField method");
         ShipUtils shipUtils = new ShipUtils();
         List<Ship> listOfShips = shipRepository.findAllByBoard_idOrderByBoard_idAscIdAsc(board.getId()).size() == 0
                 ? new ArrayList<>()
@@ -91,7 +92,7 @@ public class BoardServiceImpl implements BoardService{
                 ? new String[placementInfo.getLength()]
                 : new Gson().fromJson(listOfShips.get(listOfShips.size() - 1).getFields(), String[].class);
 
-
+        System.out.println("listOfShips.size(): " + listOfShips.size());
         if(listOfShips.size() == 0 || shipUtils.isAllShipFieldsSet(fields)){
             shipUtils.addNewShip(board, listOfShips, placementInfo);
         } else {
@@ -148,7 +149,6 @@ public class BoardServiceImpl implements BoardService{
     }
 
     @Override
-    @Transactional
     public Board autoInitializeBoard(ShipShape shipShape, Board existingBoard) {
 
         BoardArrayUtils boardArrayUtils = new BoardArrayUtils();
@@ -168,13 +168,14 @@ public class BoardServiceImpl implements BoardService{
         if(fieldStatusArray.length != 10) {
             throw new RandomSetBoardFailedException("Auto initialization of the board failed after " + retry + " tries");
         } else {
+            System.out.println("shipsToAdd.size(): " + shipsToAdd.size());
             boardToSave.setPersistedBoard(new Gson().toJson(fieldStatusArray));
 
             for(ShipPlacementInfo ship : shipsToAdd){
                 addShipField(boardToSave, ship);
             }
 
-            return boardRepository.save(boardToSave);
+            return boardToSave;
         }
     }
 
@@ -295,7 +296,7 @@ public class BoardServiceImpl implements BoardService{
             Arrays.stream(fieldStatusArray).forEach(e -> Arrays.fill(e, FieldStatus.EMPTY));
 
             List<ShipToPlaceDto> shipsToPlace = allowedShipService.getListOfShipsToPlace();
-
+            System.out.println("shipsToPlace.size(): " + shipsToPlace.size());
             for(ShipToPlaceDto shipToPlace : shipsToPlace){
 
                 final FieldWithDirection initialField = shipShape == ShipShape.CLASSIC
@@ -544,6 +545,12 @@ public class BoardServiceImpl implements BoardService{
                     .isDestroyed(false)
                     .board(board)
                     .build());
+
+            System.out.println("addNewShip: " + Ship.builder()
+                    .type(placementInfo.getType())
+                    .length(placementInfo.getLength())
+                    .fields(new Gson().toJson(fields))
+                    .build());
         }
 
         private void addShipTileToExistingShip(List<Ship> listOfShips, String[] fields, String coords){
@@ -555,6 +562,9 @@ public class BoardServiceImpl implements BoardService{
                 }
             }
             listOfShips.get(listOfShips.size() - 1).setFields(new Gson().toJson(fields));
+            System.out.println("addShipTileToExistingShip: " + listOfShips.get(listOfShips.size() - 1).getType());
+            System.out.println(listOfShips.get(listOfShips.size() - 1).getLength());
+            System.out.println(Arrays.toString(fields));
         }
 
         private FieldStatus checkIfShipIsSunk(Board board, String coords){

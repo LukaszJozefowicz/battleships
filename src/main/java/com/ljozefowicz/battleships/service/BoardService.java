@@ -21,6 +21,4 @@ public interface BoardService {
     Board autoInitializeBoard(ShipShape shipShape, Board board);
     String getRandomTarget(FieldStatus[][] fieldStatusArray);
     String getRandomTargetPossiblyNearShipHit(FieldStatus[][] fieldStatusArray, ShipShape shipShape);
-//    void saveShipsToDB(Board board);
-//    void clearShipsToAddList();
 }

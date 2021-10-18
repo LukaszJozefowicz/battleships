@@ -25,7 +25,7 @@ public class Board {
     @Column(name = "persisted_board", columnDefinition = "text")
     private String persistedBoard;
 
-    @EqualsAndHashCode.Exclude  //doesn't matter if it's here or in Ship entity. Needed for saving PC ships to DB (bean)
+    @EqualsAndHashCode.Exclude
     @JsonManagedReference
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL)
     List<Ship> ships;
